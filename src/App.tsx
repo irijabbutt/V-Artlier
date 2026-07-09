@@ -328,7 +328,7 @@ export default function App() {
             !titleLower.includes("israel") &&
             !artistLower.includes("israel")
           ) {
-            loaded.push({ id: doc.id, ...itemData });
+            loaded.push({ ...(itemData as Omit<Artwork, 'id'>), id: doc.id });
           }
         });
         loaded.sort((a, b) => {

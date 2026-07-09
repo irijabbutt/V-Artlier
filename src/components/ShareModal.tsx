@@ -16,7 +16,8 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
 
   if (!artwork) return null;
 
-  const shareUrl = `${window.location.origin}/?artwork=${artwork.id}`;
+  const SHARE_BASE_URL = "https://irijabbutt.github.io/V-Artlier";
+  const shareUrl = `${SHARE_BASE_URL}/?artwork=${artwork.id}`;
   const shareText = `Explore this breathtaking masterwork "${artwork.title}" by ${artwork.artist_name} (${artwork.year_created}) at V'Artlier Global Virtual Gallery.`;
 
   const handleCopyLink = async () => {

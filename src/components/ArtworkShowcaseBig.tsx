@@ -250,7 +250,7 @@ export default function ArtworkShowcaseBig({
                 className={`px-4 py-2 border font-mono text-[10px] uppercase tracking-wider rounded-sm transition-all cursor-pointer flex items-center gap-2 ${
                   isAudioActive && activeLanguage === "en"
                     ? "bg-[#d4af37]/20 border-[#d4af37] text-[#fffdf9]"
-                    : "bg-[#fffdf9] text-black border-transparent hover:bg-[#d4af37]"
+                    : "bg-[#120e0e] border border-[#2e2626]/30 text-amber-100/70 hover:bg-[#1f1818] hover:text-[#fffdf9]"
                 }`}
               >
                 <Volume2 className="w-4 h-4" />
@@ -263,7 +263,7 @@ export default function ArtworkShowcaseBig({
                 className={`px-4 py-2 border font-serif text-sm tracking-wider rounded-sm transition-all cursor-pointer flex items-center gap-2 ${
                   isAudioActive && activeLanguage === "ur"
                     ? "bg-[#d4af37]/20 border-[#d4af37] text-[#fffdf9]"
-                    : "bg-[#d4af37]/10 text-[#d4af37] border-[#d4af37]/40 hover:bg-[#d4af37]/20"
+                    : "bg-[#120e0e] border border-[#2e2626]/30 text-amber-100/70 hover:bg-[#1f1818] hover:text-[#fffdf9]"
                 }`}
               >
                 <Volume2 className="w-4 h-4" />

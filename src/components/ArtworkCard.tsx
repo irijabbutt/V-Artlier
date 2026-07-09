@@ -250,10 +250,10 @@ export default function ArtworkCard({
           <div className="flex items-center gap-1 bg-black/20 p-0.5 border border-[#2e2626]/30 rounded-sm">
             <button
               onClick={() => onPlayToggle(artwork, "en")}
-              className={`px-2 py-0.5 font-mono text-[8px] uppercase tracking-wider rounded-xs transition-colors flex items-center gap-0.5 cursor-pointer ${
+              className={`px-2 py-0.5 font-mono text-[8px] uppercase tracking-wider rounded-xs transition-all flex items-center gap-0.5 cursor-pointer ${
                 isAudioActive && activeLanguage === "en"
                   ? "bg-[#d4af37]/15 text-[#d4af37] border border-[#d4af37]/30"
-                  : "text-amber-100/40 hover:text-[#fffdf9]"
+                  : "bg-[#120e0e] border border-[#2e2626]/30 text-amber-100/40 hover:bg-[#1e1919] hover:text-[#fffdf9]"
               }`}
               title="Activate English Audioguide"
             >
@@ -261,10 +261,10 @@ export default function ArtworkCard({
             </button>
             <button
               onClick={() => onPlayToggle(artwork, "ur")}
-              className={`px-2 py-0.5 font-serif text-[10px] tracking-wider rounded-xs transition-colors flex items-center gap-0.5 cursor-pointer ${
+              className={`px-2 py-0.5 font-serif text-[10px] tracking-wider rounded-xs transition-all flex items-center gap-0.5 cursor-pointer ${
                 isAudioActive && activeLanguage === "ur"
                   ? "bg-[#d4af37]/15 text-[#d4af37] border border-[#d4af37]/30"
-                  : "text-amber-100/40 hover:text-[#fffdf9]"
+                  : "bg-[#120e0e] border border-[#2e2626]/30 text-amber-100/40 hover:bg-[#1e1919] hover:text-[#fffdf9]"
               }`}
               title="سماعت کریں اردو آڈیو گائیڈ"
             >
