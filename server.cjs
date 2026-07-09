@@ -53,7 +53,6 @@ var googleArtsAndCultureRegistry = {
       year_created: 1615,
       origin_country: "Pakistan",
       origin_city: "Lahore, Pakistan",
-      price: 135e3,
       medium: "Painting",
       dimensions: "34.5 cm x 22.0 cm",
       rating: 5,
@@ -74,7 +73,6 @@ var googleArtsAndCultureRegistry = {
       year_created: 1220,
       origin_country: "Syria",
       origin_city: "Raqqa, Syria",
-      price: 64e3,
       medium: "Clay & Ceramic",
       dimensions: "28.5 cm diameter",
       rating: 5,
@@ -95,7 +93,6 @@ var googleArtsAndCultureRegistry = {
       year_created: -575,
       origin_country: "Iraq",
       origin_city: "Babylon, Iraq",
-      price: 125e3,
       medium: "Clay & Ceramic",
       dimensions: "122.0 cm x 228.0 cm",
       rating: 5,
@@ -116,7 +113,6 @@ var googleArtsAndCultureRegistry = {
       year_created: 1522,
       origin_country: "Iran",
       origin_city: "Tabriz, Iran",
-      price: 16e4,
       medium: "Painting",
       dimensions: "47.0 cm x 32.0 cm",
       rating: 5,
@@ -137,7 +133,6 @@ var googleArtsAndCultureRegistry = {
       year_created: -1250,
       origin_country: "Egypt",
       origin_city: "Thebes, Egypt",
-      price: 18e4,
       medium: "Painting",
       dimensions: "Wall painting scale",
       rating: 5,
@@ -158,7 +153,6 @@ var googleArtsAndCultureRegistry = {
       year_created: 1150,
       origin_country: "Korea",
       origin_city: "Gangjin, South Korea",
-      price: 92e3,
       medium: "Clay & Ceramic",
       dimensions: "42.0 cm height",
       rating: 5,
@@ -179,7 +173,6 @@ var googleArtsAndCultureRegistry = {
       year_created: 1788,
       origin_country: "India",
       origin_city: "Kangra, India",
-      price: 85e3,
       medium: "Painting",
       dimensions: "28.0 cm x 20.0 cm",
       rating: 5,
@@ -200,7 +193,6 @@ var googleArtsAndCultureRegistry = {
       year_created: -490,
       origin_country: "Greece",
       origin_city: "Athens, Greece",
-      price: 11e4,
       medium: "Clay & Ceramic",
       dimensions: "62.5 cm height",
       rating: 5,
@@ -221,7 +213,6 @@ var googleArtsAndCultureRegistry = {
       year_created: 1575,
       origin_country: "Turkey",
       origin_city: "Iznik, Turkey",
-      price: 68e3,
       medium: "Clay & Ceramic",
       dimensions: "84.0 cm x 62.0 cm",
       rating: 5,
@@ -242,7 +233,6 @@ var googleArtsAndCultureRegistry = {
       year_created: 1479,
       origin_country: "Mexico",
       origin_city: "Tenochtitlan, Mexico",
-      price: 115e3,
       medium: "Clay & Ceramic",
       dimensions: "358 cm diameter",
       rating: 5,
@@ -263,7 +253,6 @@ var googleArtsAndCultureRegistry = {
       year_created: 500,
       origin_country: "Peru",
       origin_city: "Trujillo, Peru",
-      price: 72e3,
       medium: "Clay & Ceramic",
       dimensions: "27.5 cm x 18.0 cm",
       rating: 5,
@@ -284,7 +273,6 @@ var googleArtsAndCultureRegistry = {
       year_created: 780,
       origin_country: "China",
       origin_city: "Chang'an, China",
-      price: 11e4,
       medium: "Painting",
       dimensions: "20.8 cm x 139.8 cm",
       rating: 5,
@@ -305,7 +293,6 @@ var googleArtsAndCultureRegistry = {
       year_created: 1856,
       origin_country: "Japan",
       origin_city: "Edo (Tokyo), Japan",
-      price: 95e3,
       medium: "Painting",
       dimensions: "34.0 cm x 22.5 cm",
       rating: 5,
@@ -334,16 +321,15 @@ function toMuseumArtworkRecord(payload, country, fallbackTitle) {
     id: payload?.id || payload?.objectID || `museum_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     title,
     artist_name: creator,
-    artist_bio: payload?.artistBio || payload?.artist_bio || `A notable work from the ${country} collection`,
+    artist_bio: payload?.artistDisplayBio || payload?.artistBio || payload?.artist_bio || "",
     year_created: yearCreated,
     origin_country: country,
     origin_city: payload?.city || payload?.origin_city || country,
-    price: payload?.price || 65e3 + Math.floor(Math.random() * 5e4),
     medium: classifyMuseumMedium(payload?.medium, payload?.type),
     dimensions: payload?.dimensions || payload?.dimensions?.toString() || "Dimensions variable",
     rating: 5,
     image_url: imageUrl,
-    text_description: payload?.text_description || `A masterfully crafted artwork titled \u201C${title}\u201D from the ${country} collection.`,
+    text_description: payload?.text_description || `A masterfully crafted artwork titled "${title}" from the ${country} collection, described through its subject, materials, and cultural setting.`,
     text_description_urdu: payload?.text_description_urdu || `${title} ${country} \u06A9\u06D2 \u0645\u062C\u0645\u0648\u0639\u06C1 \u06A9\u0627 \u0627\u06CC\u06A9 \u0634\u0627\u0646\u062F\u0627\u0631 \u0634\u0627\u06C1\u06A9\u0627\u0631 \u06C1\u06D2\u06D4`,
     is_published: true,
     audio_description_url: "https://actions.google.com/sounds/v1/ambiences/morning_birds.ogg",
@@ -380,7 +366,7 @@ async function searchMuseumArtworks(query) {
           objectBeginDate: primary.objectBeginDate || 2024,
           medium: primary.medium || "",
           dimensions: primary.dimensions || "Dimensions variable",
-          text_description: `A museum-quality artwork titled \u201C${primary.title || "Untitled Masterpiece"}\u201D from the Metropolitan Museum of Art collection.`,
+          text_description: `A museum-quality artwork titled "${primary.title || "Untitled Masterpiece"}" from the Metropolitan Museum of Art collection, described through its subject, materials, and cultural setting.`,
           text_description_urdu: `${primary.title || "Untitled Masterpiece"} \u0645\u06CC\u0679\u0631\u0648\u067E\u0648\u0644\u06CC\u0679\u0646 \u0645\u06CC\u0648\u0632\u06CC\u0645 \u0622\u0641 \u0622\u0631\u0679 \u06A9\u06D2 \u0645\u062C\u0645\u0648\u0639\u06C1 \u06A9\u0627 \u0627\u06CC\u06A9 \u0634\u0627\u0646\u062F\u0627\u0631 \u0634\u0627\u06C1\u06A9\u0627\u0631 \u06C1\u06D2\u06D4`
         }, "United States"));
       } catch (err) {
@@ -404,7 +390,7 @@ async function searchMuseumArtworks(query) {
         artistDisplayName: item.creators?.[0]?.description || "Unknown Master Artist",
         medium: item.type || item.medium || "",
         dimensions: item.dimensions || "Dimensions variable",
-        text_description: `A masterfully crafted artwork titled \u201C${item.title || "Untitled Masterpiece"}\u201D from the Cleveland Museum of Art collection.`,
+        text_description: `A masterfully crafted artwork titled "${item.title || "Untitled Masterpiece"}" from the Cleveland Museum of Art collection, described through its subject, materials, and cultural setting.`,
         text_description_urdu: `${item.title || "Untitled Masterpiece"} \u06A9\u0644\u06CC\u0648\u0644\u06CC\u0646\u0688 \u0645\u06CC\u0648\u0632\u06CC\u0645 \u0622\u0641 \u0622\u0631\u0679 \u06A9\u06D2 \u0645\u062C\u0645\u0648\u0639\u06C1 \u06A9\u0627 \u0627\u06CC\u06A9 \u0634\u0627\u0646\u062F\u0627\u0631 \u0634\u0627\u06C1\u06A9\u0627\u0631 \u06C1\u06D2\u06D4`
       }, "United States"));
     }
@@ -428,7 +414,6 @@ async function searchMuseumArtworks(query) {
       image_url: piece.image_url,
       origin_city: piece.origin_city,
       year_created: piece.year_created,
-      price: piece.price,
       rating: piece.rating
     }, piece.origin_country || "Global"));
   }
@@ -501,7 +486,8 @@ async function ingestCMAArtworks() {
         }
         let enDesc = `A masterfully crafted artwork titled '${art.title}'. Part of the Cleveland Museum of Art collection.`;
         let urDesc = `${art.title} \u06A9\u0644\u06CC\u0648\u0644\u06CC\u0646\u0688 \u0645\u06CC\u0648\u0632\u06CC\u0645 \u0622\u0641 \u0622\u0631\u0679 \u06A9\u06D2 \u0645\u062C\u0645\u0648\u0639\u06C1 \u06A9\u0627 \u0627\u06CC\u06A9 \u0634\u0627\u0646\u062F\u0627\u0631 \u0634\u0627\u06C1\u06A9\u0627\u0631 \u06C1\u06D2\u06D4`;
-        const prompt = `Generate a 2-paragraph professional museum description in English and a poetic translation in Urdu for this artwork:
+        const prompt = `Generate a 2-paragraph professional museum description in English and a poetic translation in Urdu for this artwork.
+                Focus on the artwork itself: subject, composition, medium, style, visible details, provenance, and cultural meaning. Do not write an artist biography.
                 Title: ${art.title}
                 Artist: ${art.creators?.[0]?.description || "Unknown"}
                 Medium: ${art.type}
@@ -583,7 +569,8 @@ async function ingestMetArtworks() {
           if (originLower.includes("israel") || originLower.includes("tel aviv") || titleLower.includes("israel") || artistLower.includes("israel") || country.toLowerCase().includes("israel")) {
             continue;
           }
-          const prompt = `Generate a 2-paragraph professional museum description in English and a poetic translation in Urdu for this artwork:
+          const prompt = `Generate a 2-paragraph professional museum description in English and a poetic translation in Urdu for this artwork.
+                    Focus on the artwork itself: subject, composition, medium, style, visible details, provenance, and cultural meaning. Do not write an artist biography.
                     Title: ${art.title}
                     Artist: ${art.artistDisplayName}
                     Medium: ${art.medium}
@@ -613,6 +600,7 @@ async function ingestMetArtworks() {
             id: `met_${art.objectID}`,
             title: art.title || "Untitled Masterpiece",
             artist_name: art.artistDisplayName || "Unknown Master Artist",
+            artist_bio: art.artistDisplayBio || "",
             image_url: art.primaryImageSmall || art.primaryImage || "",
             origin_country: country,
             medium: (art.medium || "").toLowerCase().includes("ceramic") || (art.medium || "").toLowerCase().includes("clay") || (art.medium || "").toLowerCase().includes("porcelain") ? "Clay & Ceramic" : "Painting",
@@ -703,7 +691,8 @@ app.post("/api/enrich-description", async (req, res) => {
       return res.status(400).json({ error: "Title is required" });
     }
     const prompt = `Research the historical artwork titled "${title}" by artist "${artist || "Unknown"}" from "${origin || "Unknown"}". 
-Using Google Search to verify accurate details, write a highly descriptive, professional 3-sentence museum curator note in English about its history, style, and significance.
+Using Google Search to verify accurate details, write a highly descriptive, professional 3-sentence museum curator note in English about the artwork's subject, composition, medium, style, provenance, and significance.
+Do not write an artist biography in this guide text. Mention the artist only when needed for attribution or art-historical context, not as the focus.
 Then, translate or adapt this into elegant, flowing, poetic Urdu (approx 3 sentences).
 Return the response as a JSON object with two fields:
 {
@@ -737,7 +726,7 @@ app.post("/api/guide-tts", async (req, res) => {
     }
     const cleanText = String(text).replace(/['"“”«»]/g, " ").trim();
     const isUrdu = language === "ur" || /[\u0600-\u06FF]/.test(cleanText);
-    const prompt = isUrdu ? `Transform this into a short, elegant, poetic Urdu audio-guide narration for an art exhibition. Keep it flowing, expressive, and warm, with a calm female voice in mind. Text: ${cleanText}` : `Transform this into a short, elegant, poetic English audio-guide narration for an art exhibition. Keep it flowing, expressive, and warm, with a calm female voice in mind. Text: ${cleanText}`;
+    const prompt = isUrdu ? `Transform this into a short, elegant, poetic Urdu audio-guide narration for an art exhibition. Keep it flowing, expressive, and warm \u2014 a subtle young woman's voice reading slowly, like soft poetry. Text: ${cleanText}` : `Transform this into a short, elegant, poetic English audio-guide narration for an art exhibition. Keep it flowing, expressive, and warm \u2014 a subtle young woman's voice reading slowly, like soft poetry. Text: ${cleanText}`;
     const response = await ai.models.generateContent({
       model: "gemini-3.1-flash-tts-preview",
       contents: [{ parts: [{ text: prompt }] }],
@@ -770,7 +759,7 @@ app.post("/api/urdu-tts", async (req, res) => {
       return res.status(400).json({ error: "Text is required" });
     }
     const cleanText = String(text).replace(/['"“”«»]/g, " ").trim();
-    const prompt = `Transform this into a short, elegant, poetic Urdu audio-guide narration for an art exhibition. Keep it flowing, expressive, and warm, with a calm female voice in mind. Text: ${cleanText}`;
+    const prompt = `Transform this into a short, elegant, poetic Urdu audio-guide narration for an art exhibition. Keep it flowing, expressive, and warm \u2014 a subtle young woman's voice reading slowly, like soft poetry. Text: ${cleanText}`;
     const response = await ai.models.generateContent({
       model: "gemini-3.1-flash-tts-preview",
       contents: [{ parts: [{ text: prompt }] }],
