@@ -305,6 +305,133 @@ const googleArtsAndCultureRegistry: Record<string, any[]> = {
   ]
 };
 
+function classifyMuseumMedium(medium?: string, type?: string) {
+  const source = `${medium || ""} ${type || ""}`.toLowerCase();
+  if (source.includes("ceramic") || source.includes("clay") || source.includes("porcelain") || source.includes("pottery") || source.includes("glass")) {
+    return "Clay & Ceramic";
+  }
+  return "Painting";
+}
+
+function toMuseumArtworkRecord(payload: any, country: string, fallbackTitle?: string) {
+  const title = payload?.title || fallbackTitle || "Untitled Masterpiece";
+  const creator = payload?.artistDisplayName || payload?.creators?.[0]?.description || payload?.artist_name || "Unknown Master Artist";
+  const imageUrl = payload?.primaryImageSmall || payload?.primaryImage || payload?.image_url || "";
+  const yearCreated = payload?.objectBeginDate || payload?.year_created || 2024;
+  return {
+    id: payload?.id || payload?.objectID || `museum_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    title,
+    artist_name: creator,
+    artist_bio: payload?.artistBio || payload?.artist_bio || `A notable work from the ${country} collection`,
+    year_created: yearCreated,
+    origin_country: country,
+    origin_city: payload?.city || payload?.origin_city || country,
+    price: payload?.price || 65000 + Math.floor(Math.random() * 50000),
+    medium: classifyMuseumMedium(payload?.medium, payload?.type),
+    dimensions: payload?.dimensions || payload?.dimensions?.toString() || "Dimensions variable",
+    rating: 5,
+    image_url: imageUrl,
+    text_description: payload?.text_description || `A masterfully crafted artwork titled “${title}” from the ${country} collection.`,
+    text_description_urdu: payload?.text_description_urdu || `${title} ${country} کے مجموعہ کا ایک شاندار شاہکار ہے۔`,
+    is_published: true,
+    audio_description_url: 'https://actions.google.com/sounds/v1/ambiences/morning_birds.ogg',
+    audio_urdu_url: 'https://actions.google.com/sounds/v1/ambiences/night_crickets.ogg',
+    created_at: new Date().toISOString()
+  };
+}
+
+async function searchMuseumArtworks(query: string) {
+  const normalizedQuery = (query || "global").trim() || "global";
+  const results: any[] = [];
+  const seenIds = new Set<string>();
+
+  const addArtwork = (artwork: any) => {
+    const artworkId = artwork?.id || artwork?.objectID || artwork?.title;
+    if (!artworkId || seenIds.has(artworkId)) return;
+    seenIds.add(artworkId);
+    results.push(artwork);
+  };
+
+  // Met Museum search
+  try {
+    const metSearch = await axios.get('https://collectionapi.metmuseum.org/public/collection/v1/search', {
+      params: { q: normalizedQuery, hasImages: true },
+      timeout: 10000,
+    });
+    const objectIds = Array.isArray(metSearch.data?.objectIDs) ? metSearch.data.objectIDs.slice(0, 6) : [];
+    for (const objectId of objectIds) {
+      try {
+        const objectRes = await axios.get(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${objectId}`, { timeout: 10000 });
+        const primary = objectRes.data;
+        addArtwork(toMuseumArtworkRecord({
+          ...primary,
+          id: `met_${primary.objectID}`,
+          title: primary.title || 'Untitled Masterpiece',
+          artistDisplayName: primary.artistDisplayName || 'Unknown Master Artist',
+          primaryImageSmall: primary.primaryImageSmall || primary.primaryImage || '',
+          objectBeginDate: primary.objectBeginDate || 2024,
+          medium: primary.medium || '',
+          dimensions: primary.dimensions || 'Dimensions variable',
+          text_description: `A museum-quality artwork titled “${primary.title || 'Untitled Masterpiece'}” from the Metropolitan Museum of Art collection.`,
+          text_description_urdu: `${primary.title || 'Untitled Masterpiece'} میٹروپولیٹن میوزیم آف آرٹ کے مجموعہ کا ایک شاندار شاہکار ہے۔`
+        }, 'United States'));
+      } catch (err) {
+        console.warn('Met object fetch failed', err);
+      }
+    }
+  } catch (err) {
+    console.warn('Met search failed', err);
+  }
+
+  // Cleveland Museum of Art search
+  try {
+    const cmaSearch = await axios.get('https://openaccess-api.clevelandart.org/api/artworks/', {
+      params: { q: normalizedQuery, limit: 6, has_image: 1 },
+      timeout: 10000,
+    });
+    const cmaItems = Array.isArray(cmaSearch.data?.data) ? cmaSearch.data.data : [];
+    for (const item of cmaItems) {
+      addArtwork(toMuseumArtworkRecord({
+        ...item,
+        id: `cma_${item.id}`,
+        title: item.title || 'Untitled Masterpiece',
+        artistDisplayName: item.creators?.[0]?.description || 'Unknown Master Artist',
+        medium: item.type || item.medium || '',
+        dimensions: item.dimensions || 'Dimensions variable',
+        text_description: `A masterfully crafted artwork titled “${item.title || 'Untitled Masterpiece'}” from the Cleveland Museum of Art collection.`,
+        text_description_urdu: `${item.title || 'Untitled Masterpiece'} کلیولینڈ میوزیم آف آرٹ کے مجموعہ کا ایک شاندار شاہکار ہے۔`
+      }, 'United States'));
+    }
+  } catch (err) {
+    console.warn('CMA search failed', err);
+  }
+
+  // Google Arts & Culture registry fallback
+  const registryMatches = Object.values(googleArtsAndCultureRegistry).flat().filter((piece: any) => {
+    const haystack = `${piece.title || ''} ${piece.artist_name || ''} ${piece.origin_country || ''}`.toLowerCase();
+    return haystack.includes(normalizedQuery.toLowerCase());
+  }).slice(0, 4);
+  for (const piece of registryMatches) {
+    addArtwork(toMuseumArtworkRecord({
+      ...piece,
+      id: piece.id,
+      title: piece.title,
+      artistDisplayName: piece.artist_name,
+      medium: piece.medium,
+      dimensions: piece.dimensions,
+      text_description: piece.text_description,
+      text_description_urdu: piece.text_description_urdu,
+      image_url: piece.image_url,
+      origin_city: piece.origin_city,
+      year_created: piece.year_created,
+      price: piece.price,
+      rating: piece.rating,
+    }, piece.origin_country || 'Global'));
+  }
+
+  return results.slice(0, 12);
+}
+
 // Google Arts & Culture fallback engine for any country having no data
 async function ingestGoogleArtsAndCultureFallback() {
     console.log("Checking for countries with no data to seed from Google Arts & Culture...");
@@ -561,6 +688,18 @@ cron.schedule('0 * * * *', async () => {
     await ingestGoogleArtsAndCultureFallback();
 });
 
+// API endpoint to search artworks from Met, Cleveland, and Google Arts & Culture sources
+app.get("/api/search-artworks", async (req, res) => {
+  try {
+    const query = typeof req.query.q === "string" ? req.query.q : "global";
+    const artworks = await searchMuseumArtworks(query);
+    res.json(artworks);
+  } catch (error: any) {
+    console.error("Search artworks route failed:", error);
+    res.status(500).json({ error: error.message || "Artwork search failed" });
+  }
+});
+
 // API endpoint to trigger manual ingestion
 app.post("/api/ingest-artworks", async (req, res) => {
     try {
@@ -639,7 +778,49 @@ Return the response as a JSON object with two fields:
   }
 });
 
-// API endpoint for Urdu Text-To-Speech using Gemini 3.1 Flash TTS
+// API endpoint for female-voice poetic audio guide narration via Gemini TTS
+app.post("/api/guide-tts", async (req, res) => {
+  try {
+    const { text, language = "en" } = req.body;
+    if (!text) {
+      return res.status(400).json({ error: "Text is required" });
+    }
+
+    const cleanText = String(text).replace(/['"“”«»]/g, " ").trim();
+    const isUrdu = language === "ur" || /[\u0600-\u06FF]/.test(cleanText);
+    const prompt = isUrdu
+      ? `Transform this into a short, elegant, poetic Urdu audio-guide narration for an art exhibition. Keep it flowing, expressive, and warm, with a calm female voice in mind. Text: ${cleanText}`
+      : `Transform this into a short, elegant, poetic English audio-guide narration for an art exhibition. Keep it flowing, expressive, and warm, with a calm female voice in mind. Text: ${cleanText}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-flash-tts-preview",
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Aoede' },
+          },
+        },
+      },
+    });
+
+    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    if (!base64Audio) {
+      throw new Error("No audio data returned from Gemini TTS");
+    }
+
+    res.json({ audioBase64: base64Audio });
+  } catch (error: any) {
+    console.error("Error in guide-tts:", error);
+    if (error.message?.includes("429") || error.status === 429) {
+      return res.status(429).json({ error: "Voice synthesis quota exceeded. Please wait a moment and try again." });
+    }
+    res.status(500).json({ error: error.message || "Failed to generate narration audio" });
+  }
+});
+
+// Backward-compatible Urdu endpoint that reuses the same female poetic voice
 app.post("/api/urdu-tts", async (req, res) => {
   try {
     const { text } = req.body;
@@ -647,55 +828,28 @@ app.post("/api/urdu-tts", async (req, res) => {
       return res.status(400).json({ error: "Text is required" });
     }
 
-    // Clean text and keep clean, high-performance TTS streaming
-    const cleanText = text.replace(/["'“”«»]/g, " ");
-    let urduText = cleanText;
+    const cleanText = String(text).replace(/['"“”«»]/g, " ").trim();
+    const prompt = `Transform this into a short, elegant, poetic Urdu audio-guide narration for an art exhibition. Keep it flowing, expressive, and warm, with a calm female voice in mind. Text: ${cleanText}`;
 
-    // Detect if text lacks Urdu script characters, and translate it to beautiful Urdu if so
-    const hasUrdu = /[\u0600-\u06FF]/.test(cleanText);
-    if (!hasUrdu) {
-      console.log("English text detected for Urdu TTS. Translating to Urdu first...");
-      try {
-        const translationRes = await ai.models.generateContent({
-          model: "gemini-3.5-flash",
-          contents: [{ role: "user", parts: [{ text: `Translate this museum artwork description into beautiful, elegant, poetic, and flowing Urdu suitable for an audio guide: "${cleanText}"` }] }]
-        });
-        const translated = translationRes.text?.trim();
-        if (translated) {
-          urduText = translated;
-          console.log("Successfully translated to Urdu for TTS:", urduText);
-        }
-      } catch (transError) {
-        console.error("Translation before TTS failed, falling back to original:", transError);
-      }
-    }
-
-    try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3.1-flash-tts-preview",
-        contents: [{ parts: [{ text: `Speak this Urdu text in a clear, natural, beautiful voice: ${urduText}` }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Kore' },
-            },
+    const response = await ai.models.generateContent({
+      model: "gemini-3.1-flash-tts-preview",
+      contents: [{ parts: [{ text: prompt }] }],
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Aoede' },
           },
         },
-      });
+      },
+    });
 
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (!base64Audio) {
-        throw new Error("No audio data returned from Gemini TTS");
-      }
-
-      res.json({ audioBase64: base64Audio });
-    } catch (apiError: any) {
-      if (apiError.message?.includes("429") || apiError.status === 429) {
-        return res.status(429).json({ error: "Voice synthesis quota exceeded. Please wait a moment and try again." });
-      }
-      throw apiError;
+    const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+    if (!base64Audio) {
+      throw new Error("No audio data returned from Gemini TTS");
     }
+
+    res.json({ audioBase64: base64Audio });
   } catch (error: any) {
     console.error("Error in urdu-tts:", error);
     res.status(500).json({ error: error.message || "Failed to generate Urdu TTS" });

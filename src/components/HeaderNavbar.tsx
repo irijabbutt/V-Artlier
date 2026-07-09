@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Search, Grid, LayoutList, Star, Sparkles, RefreshCw, Shuffle } from "lucide-react";
-<<<<<<< HEAD
 import brandLogo from "../../assets/v'artlier logo.svg";
-=======
->>>>>>> f76842695605803209b384a03fbde256f51798c6
 
 interface HeaderNavbarProps {
   searchQuery: string;
@@ -58,32 +55,8 @@ export default function HeaderNavbar({
         <div className="flex flex-row items-center justify-between w-full gap-4 pb-1">
           {/* Logo and Wordmark */}
           <div className="flex items-center gap-3">
-<<<<<<< HEAD
             <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0">
               <img src={brandLogo} alt="V'Artlier logo" className="w-full h-full object-contain" />
-=======
-            {/* Inline SVG Monogram Mini-Portal */}
-            <div className="w-10 h-10 sm:w-12 sm:h-12 shrink-0">
-              <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-[#fffdf9]">
-                {/* Concentric Squares */}
-                <rect x="35" y="25" width="45" height="45" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.8" />
-                <rect x="41" y="31" width="33" height="33" stroke="currentColor" strokeWidth="1" strokeOpacity="0.6" />
-                <rect x="47" y="37" width="21" height="21" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.4" />
-                <rect x="53" y="43" width="9" height="9" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.3" />
-
-                {/* Perspective Diagonal Guide Lines */}
-                <line x1="35" y1="25" x2="57.5" y2="47.5" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.4" />
-                <line x1="80" y1="25" x2="57.5" y2="47.5" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.4" />
-                <line x1="35" y1="70" x2="57.5" y2="47.5" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.4" />
-                <line x1="80" y1="70" x2="57.5" y2="47.5" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.4" />
-
-                {/* Intertwined V & A Monogram */}
-                <path d="M11 25 L35 70 L52.5 30 L70 70" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M17 25 L38.5 65 L52.5 36 L66.5 65" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M44 51 L61 51" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                <path d="M46 54 L59 54" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-              </svg>
->>>>>>> f76842695605803209b384a03fbde256f51798c6
             </div>
             <div>
               <span className="font-serif text-lg sm:text-2xl tracking-[0.12em] uppercase text-[#fffdf9] font-medium block leading-none">

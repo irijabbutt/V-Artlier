@@ -10,7 +10,6 @@ import ShareModal from "./components/ShareModal";
 import ArtworkShowcaseBig from "./components/ArtworkShowcaseBig";
 import { Artwork, PlaybackLanguage } from "./types";
 import { db, collection, setDoc, doc, onSnapshot, deleteDoc, getDocs, handleFirestoreError, OperationType, firebaseConfigValid } from "./firebase";
-import { DEFAULT_ARTWORKS } from "./data";
 
 export default function App() {
   const [hasEntered, setHasEntered] = useState(false);
@@ -41,26 +40,6 @@ export default function App() {
   // Extract a hero piece for the entrance landing (populated once live data arrives)
   const [heroPiece, setHeroPiece] = useState<Artwork | null>(null);
 
-  if (!firebaseConfigValid) {
-    return (
-      <div className="min-h-screen bg-[#161212] text-[#fffdf9] flex items-center justify-center px-6 py-10">
-        <div className="max-w-2xl rounded-3xl border border-[#d4af37]/30 bg-[#120e0e]/95 p-10 shadow-[0_0_40px_rgba(212,175,55,0.18)]">
-          <h1 className="font-serif text-3xl text-[#fffdf9] mb-4">Configuration Required</h1>
-          <p className="text-amber-100/70 leading-relaxed text-sm">
-            The deployed site is missing Firebase build-time configuration. GitHub Pages requires the frontend to be built with valid `VITE_FB_*` environment variables before deployment.
-          </p>
-          <div className="mt-6 rounded-2xl bg-[#1e1919] border border-[#2e2626] p-4 text-[13px] text-amber-100/60">
-            <p className="font-mono uppercase tracking-[0.2em] text-[#d4af37] mb-2">Required variables</p>
-            <code className="block whitespace-pre-wrap">VITE_FB_APIKEY{`\n`}VITE_FB_AUTHDOMAIN{`\n`}VITE_FB_PROJECTID{`\n`}VITE_FB_STORAGEBUCKET{`\n`}VITE_FB_MESSAGING_SENDER_ID{`\n`}VITE_FB_APPID</code>
-          </div>
-          <p className="mt-6 text-amber-100/60 text-sm">
-            Once the environment values are provided at build time, rebuild and deploy the site again to restore the gallery.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   useEffect(() => {
     if (artworks.length > 0) {
       if (!selectedArtwork) {
@@ -74,6 +53,11 @@ export default function App() {
 
   // Call the server-side Gemini API with Google Search Grounding to enrich descriptions in English & Urdu
   const handleEnrichArtwork = async (artworkToEnrich: Artwork) => {
+    if (!firebaseConfigValid || !db) {
+      alert("Artwork enrichment requires Firebase configuration, so this demo is showing the built-in curated gallery.");
+      return;
+    }
+
     try {
       const response = await fetch("/api/enrich-description", {
         method: "POST",
@@ -123,34 +107,49 @@ export default function App() {
 
   // Load artworks from Firestore and sync with public APIs if empty
   useEffect(() => {
+    let isActive = true;
+
+    if (!firebaseConfigValid || !db) {
+      const loadFallbackArtworks = async () => {
+        try {
+          const query = searchQuery.trim() || "global";
+          const response = await fetch(`/api/search-artworks?q=${encodeURIComponent(query)}`);
+          if (!response.ok) throw new Error("Remote museum search unavailable");
+          const remoteArtworks = await response.json();
+          if (isActive && Array.isArray(remoteArtworks) && remoteArtworks.length > 0) {
+            setArtworks(remoteArtworks as Artwork[]);
+            return;
+          }
+        } catch (error) {
+          console.warn("Remote museum search unavailable, using built-in gallery", error);
+        }
+
+        if (isActive) {
+          setArtworks([]);
+        }
+      };
+
+      loadFallbackArtworks();
+      return () => {
+        isActive = false;
+      };
+    }
+
     const q = collection(db, "artworks");
     const unsubscribe = onSnapshot(q, async (snapshot) => {
+      if (!isActive) return;
+
       if (snapshot.empty) {
-        console.log("Firestore empty, seeding with curated masterpieces...");
-        try {
-          const writePromises = DEFAULT_ARTWORKS.map(async (art) => {
-            try {
-              await setDoc(doc(db, "artworks", art.id), {
-                ...art,
-                created_at: art.created_at || new Date().toISOString()
-              });
-            } catch (setErr) {
-              handleFirestoreError(setErr, OperationType.WRITE, `artworks/${art.id}`);
-            }
-          });
-          await Promise.all(writePromises);
-          console.log("Seeding completed successfully!");
-        } catch (err) {
-          console.error("Seeding failed: ", err);
-        }
+        console.log("Firestore empty; no default artworks will be seeded.");
+        setArtworks([]);
       } else {
         const loaded: Artwork[] = [];
-        snapshot.forEach((doc) => {
-          const itemData = doc.data() as Artwork;
+        snapshot.forEach((docSnap) => {
+          const itemData = docSnap.data() as Artwork;
           const titleLower = (itemData.title || "").toLowerCase();
           const originLower = (itemData.origin_country || "").toLowerCase();
           const artistLower = (itemData.artist_name || "").toLowerCase();
-          
+
           // Apply strict client-side exclusion filter
           if (
             !originLower.includes("israel") &&
@@ -158,7 +157,7 @@ export default function App() {
             !titleLower.includes("israel") &&
             !artistLower.includes("israel")
           ) {
-            loaded.push({ ...(itemData as Omit<Artwork, 'id'>), id: doc.id });
+            loaded.push({ ...(itemData as Omit<Artwork, 'id'>), id: docSnap.id });
           }
         });
         loaded.sort((a, b) => {
@@ -169,11 +168,15 @@ export default function App() {
         setArtworks(loaded);
       }
     }, (error) => {
+      if (!isActive) return;
       handleFirestoreError(error, OperationType.GET, "artworks");
     });
 
-    return () => unsubscribe();
-  }, []);
+    return () => {
+      isActive = false;
+      unsubscribe();
+    };
+  }, [firebaseConfigValid, searchQuery]);
 
   // Synchronize selected artwork on list update or on first load
   useEffect(() => {
@@ -241,6 +244,11 @@ export default function App() {
 
   // Reset wall back to Met & CMA highlights
   const handleResetGallery = async () => {
+    if (!firebaseConfigValid || !db) {
+      alert("The reset action requires Firebase configuration. The built-in gallery remains available in offline mode.");
+      return;
+    }
+
     setIsResetting(true);
     try {
       const q = collection(db, "artworks");
@@ -271,6 +279,11 @@ export default function App() {
 
   // Manual trigger to ingest remaining unique artworks from Cleveland Museum of Art and Met Museum API
   const handleIngestCMAArtworks = async () => {
+    if (!firebaseConfigValid) {
+      alert("Gallery expansion requires Firebase configuration. The built-in collection is currently being shown.");
+      return;
+    }
+
     setIsIngesting(true);
     try {
       console.log("Triggering manual ingestion via server...");

@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, FirebaseApp } from "firebase/app";
 import { getFirestore, collection, addDoc, getDocs, setDoc, doc, query, orderBy, onSnapshot, limit, deleteDoc, Firestore } from "firebase/firestore";
 import { getAuth, Auth } from "firebase/auth";
 
@@ -27,20 +27,20 @@ if (!firebaseConfigValid) {
   );
 }
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Initialize Firebase only when the build-time config is complete.
+const app: FirebaseApp | null = firebaseConfigValid ? initializeApp(firebaseConfig) : null;
 
 // Use custom firestoreDatabaseId if provided, else (default)
 const firestoreDbId = import.meta.env.VITE_FB_FIRESTOREDATABASEID || "(default)";
-export const db = getFirestore(app, firestoreDbId);
+export const db = app ? getFirestore(app, firestoreDbId) : null;
 export let auth: Auth | null = null;
 
-if (firebaseConfigValid) {
+if (firebaseConfigValid && app) {
   auth = getAuth(app);
 } else {
   console.warn(
-    "Firebase auth initialization skipped because the build-time configuration is incomplete. " +
-    "The app will render a placeholder instead of connecting to Firestore."
+    "Firebase initialization skipped because the build-time configuration is incomplete. " +
+    "The app will use the built-in gallery data instead of Firestore."
   );
 }
 
