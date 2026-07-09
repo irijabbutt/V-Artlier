@@ -789,8 +789,8 @@ app.post("/api/guide-tts", async (req, res) => {
     const cleanText = String(text).replace(/['"“”«»]/g, " ").trim();
     const isUrdu = language === "ur" || /[\u0600-\u06FF]/.test(cleanText);
     const prompt = isUrdu
-      ? `Transform this into a short, elegant, poetic Urdu audio-guide narration for an art exhibition. Keep it flowing, expressive, and warm, with a calm female voice in mind. Text: ${cleanText}`
-      : `Transform this into a short, elegant, poetic English audio-guide narration for an art exhibition. Keep it flowing, expressive, and warm, with a calm female voice in mind. Text: ${cleanText}`;
+      ? `Transform this into a short, elegant, poetic Urdu audio-guide narration for an art exhibition. Keep it flowing, expressive, and warm — a subtle young woman's voice reading slowly, like soft poetry. Text: ${cleanText}`
+      : `Transform this into a short, elegant, poetic English audio-guide narration for an art exhibition. Keep it flowing, expressive, and warm — a subtle young woman's voice reading slowly, like soft poetry. Text: ${cleanText}`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3.1-flash-tts-preview",
@@ -829,7 +829,7 @@ app.post("/api/urdu-tts", async (req, res) => {
     }
 
     const cleanText = String(text).replace(/['"“”«»]/g, " ").trim();
-    const prompt = `Transform this into a short, elegant, poetic Urdu audio-guide narration for an art exhibition. Keep it flowing, expressive, and warm, with a calm female voice in mind. Text: ${cleanText}`;
+    const prompt = `Transform this into a short, elegant, poetic Urdu audio-guide narration for an art exhibition. Keep it flowing, expressive, and warm — a subtle young woman's voice reading slowly, like soft poetry. Text: ${cleanText}`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3.1-flash-tts-preview",

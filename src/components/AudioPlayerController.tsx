@@ -69,11 +69,14 @@ export default function AudioPlayerController({
     });
   };
 
-  // Client-only female Urdu narration via Google Translate's public TTS stream.
+  // Slowed playback so the narration reads like unhurried poetry
+  const POETRY_RATE = 0.82;
+
+  // Client-only young female narration via Google Translate's public TTS stream.
   // Works on static hosting (GitHub Pages) where the Gemini TTS server API doesn't exist.
   // ponytail: unofficial endpoint with ~200-char limit per request, so text is chunked
   // and played sequentially; upgrade path is a hosted TTS API when one is available.
-  const playGoogleTranslateUrdu = (text: string, currentId: number): Promise<void> => {
+  const playGoogleTranslateVoice = (text: string, lang: "en" | "ur", currentId: number): Promise<void> => {
     const chunks: string[] = [];
     let buffer = "";
     for (const word of text.split(/\s+/)) {
@@ -94,8 +97,9 @@ export default function AudioPlayerController({
           resolve();
           return;
         }
-        const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ur&client=tw-ob&q=${encodeURIComponent(chunks[index++])}`;
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(chunks[index++])}`;
         const audio = new Audio(url);
+        audio.playbackRate = POETRY_RATE;
         googleTTSAudioRef.current = audio;
         audio.onended = playNext;
         audio.onerror = () => reject(new Error("Google Translate TTS stream failed"));
@@ -142,7 +146,8 @@ export default function AudioPlayerController({
     const descUrdu = toSafeString(artwork.text_description_urdu);
     const text = language === "en" ? desc : (descUrdu || "");
     const wordCount = text.split(/\s+/).length;
-    const estDuration = Math.max(Math.ceil(wordCount / 2.3), 20);
+    // ~1.9 words/sec matches the slowed poetry-pace narration
+    const estDuration = Math.max(Math.ceil(wordCount / 1.9), 20);
     setDuration(estDuration);
     setProgress(0);
 
@@ -308,8 +313,8 @@ export default function AudioPlayerController({
             if (currentId !== playbackIdRef.current) return;
             console.warn("Gemini TTS unavailable, using Google Translate female Urdu voice:", err);
 
-            // Second tier: Google Translate TTS (female Urdu voice, works on static hosting)
-            playGoogleTranslateUrdu(cleanText, currentId)
+            // Second tier: Google Translate TTS (young female Urdu voice, works on static hosting)
+            playGoogleTranslateVoice(cleanText, "ur", currentId)
               .then(() => {
                 if (currentId === playbackIdRef.current && progress >= 90) {
                   onTogglePlay();
@@ -334,7 +339,8 @@ export default function AudioPlayerController({
 
                 const utterance = new SpeechSynthesisUtterance(speakText);
                 utterance.lang = "ur-PK";
-                utterance.rate = 0.85;
+                utterance.rate = 0.75;
+                utterance.pitch = 1.15; // gentle, younger-sounding register
                 const urduHindiVoices = voices.filter(v => 
                   v.lang.toLowerCase().startsWith("ur") || 
                   v.lang.toLowerCase().startsWith("hi")
@@ -362,16 +368,19 @@ export default function AudioPlayerController({
             }
         };
       } else {
-        // English playback via local WebSpeech
-        if (window.speechSynthesis) {
+        // English: same young female Google Translate voice at poetry pace,
+        // with local WebSpeech as fallback
+        const speakEnglishWithWebSpeech = (speakText: string, speakId: number) => {
+          if (!window.speechSynthesis) return;
           window.speechSynthesis.cancel();
 
           getVoicesAsync().then((voices) => {
-            if (currentId !== playbackIdRef.current) return;
+            if (speakId !== playbackIdRef.current) return;
 
-            const utterance = new SpeechSynthesisUtterance(textToSpeak);
+            const utterance = new SpeechSynthesisUtterance(speakText);
             utterance.lang = "en-US";
-            utterance.rate = 0.95;
+            utterance.rate = 0.78;
+            utterance.pitch = 1.12; // gentle, younger-sounding register
             const englishVoices = voices.filter(v => v.lang.toLowerCase().includes("en"));
             const isFemale = (v: SpeechSynthesisVoice) => {
               const nameLower = v.name.toLowerCase();
@@ -398,7 +407,20 @@ export default function AudioPlayerController({
             speechUtteranceRef.current = utterance;
             window.speechSynthesis.speak(utterance);
           });
-        }
+        };
+
+        playGoogleTranslateVoice(textToSpeak.replace(/["'“”«»]/g, " "), "en", currentId)
+          .then(() => {
+            if (currentId === playbackIdRef.current && progress >= 90) {
+              onTogglePlay();
+              setProgress(100);
+            }
+          })
+          .catch((gtErr) => {
+            if (currentId !== playbackIdRef.current) return;
+            console.warn("Google Translate TTS failed, using browser speech fallback:", gtErr);
+            speakEnglishWithWebSpeech(textToSpeak, currentId);
+          });
       }
     } catch (err) {
       console.error("Audio playback error:", err);
