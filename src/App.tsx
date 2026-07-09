@@ -39,7 +39,6 @@ export default function App() {
   const [sharingArtwork, setSharingArtwork] = useState<Artwork | null>(null);
 
   const [isResetting, setIsResetting] = useState(false);
-  const [isIngesting, setIsIngesting] = useState(false);
 
   // Extract a hero piece for the entrance landing (populated once live data arrives)
   const [heroPiece, setHeroPiece] = useState<Artwork | null>(null);
@@ -306,29 +305,6 @@ export default function App() {
     }
   };
 
-  // Manual trigger to ingest remaining unique artworks from Cleveland Museum of Art and Met Museum API
-  const handleIngestCMAArtworks = async () => {
-    if (!firebaseConfigValid) {
-      alert("Gallery expansion requires Firebase configuration. No local fallback collection is available right now.");
-      return;
-    }
-
-    setIsIngesting(true);
-    try {
-      console.log("Triggering manual ingestion via server...");
-      const res = await fetch("/api/ingest-artworks", { method: "POST" });
-      if (!res.ok) throw new Error("Ingestion API request failed");
-      
-      alert("Successfully triggered gallery expansion!");
-      // We don't need to manually update artworks as it will be updated by onSnapshot listener in useEffect
-    } catch (err: any) {
-      console.error("Gallery expansion failed:", err);
-      alert("Gallery expansion failed: " + (err.message || String(err)));
-    } finally {
-      setIsIngesting(false);
-    }
-  };
-
   // Medium / country / rating facet filters (shared by local and museum API results)
   const matchesFacets = (art: Artwork) => {
     const matchesMedium = selectedMedium === "All" || art.medium === selectedMedium;
@@ -468,7 +444,6 @@ export default function App() {
                     >
                       Clear Curation Filters
                     </button>
-                    {/* Expand Gallery button removed */}
                   </div>
                 </div>
               ) : (
