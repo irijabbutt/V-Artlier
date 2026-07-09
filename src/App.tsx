@@ -10,6 +10,7 @@ import ShareModal from "./components/ShareModal";
 import ArtworkShowcaseBig from "./components/ArtworkShowcaseBig";
 import { Artwork, PlaybackLanguage } from "./types";
 import { db, collection, setDoc, doc, onSnapshot, deleteDoc, getDocs, handleFirestoreError, OperationType, firebaseConfigValid } from "./firebase";
+import { DEFAULT_ARTWORKS } from "./data";
 
 export default function App() {
   const [hasEntered, setHasEntered] = useState(false);
@@ -22,6 +23,7 @@ export default function App() {
   // Filter and curation states
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMedium, setSelectedMedium] = useState<"All" | "Painting" | "Clay & Ceramic">("All");
+  const [selectedCountry, setSelectedCountry] = useState<string>("All");
   const [selectedRating, setSelectedRating] = useState<number>(0);
   const [viewMode, setViewMode] = useState<"horizontal" | "masonry">("horizontal");
 
@@ -61,9 +63,14 @@ export default function App() {
 
   useEffect(() => {
     if (artworks.length > 0) {
-      setHeroPiece(artworks[Math.floor(Math.random() * artworks.length)]);
+      if (!selectedArtwork) {
+        setSelectedArtwork(artworks[0]);
+      }
+      if (!heroPiece) {
+        setHeroPiece(artworks[Math.floor(Math.random() * artworks.length)]);
+      }
     }
-  }, [artworks]);
+  }, [artworks, selectedArtwork, heroPiece]);
 
   // Call the server-side Gemini API with Google Search Grounding to enrich descriptions in English & Urdu
   const handleEnrichArtwork = async (artworkToEnrich: Artwork) => {
@@ -119,217 +126,20 @@ export default function App() {
     const q = collection(db, "artworks");
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       if (snapshot.empty) {
-        console.log("Firestore empty, seeding with Met Museum and Cleveland Museum of Art masterpieces...");
+        console.log("Firestore empty, seeding with curated masterpieces...");
         try {
-          // Helper to fetch details for a Met object ID and map to our Artwork type
-          const fetchMetDetails = async (id: number): Promise<Artwork | null> => {
+          const writePromises = DEFAULT_ARTWORKS.map(async (art) => {
             try {
-              const res = await fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`);
-              if (!res.ok) return null;
-              const item = await res.json();
-              if (!item || (!item.primaryImageSmall && !item.primaryImage)) return null;
-
-              const titleLower = (item.title || "").toLowerCase();
-              const originLower = (item.country || item.culture || "").toLowerCase();
-              const artistLower = (item.artistDisplayName || "").toLowerCase();
-
-              // Strict client-side exclusion filter
-              if (
-                originLower.includes("israel") ||
-                originLower.includes("tel aviv") ||
-                titleLower.includes("israel") ||
-                artistLower.includes("israel")
-              ) {
-                return null;
-              }
-
-              const mediumLower = (item.medium || "").toLowerCase();
-              const classificationLower = (item.classification || "").toLowerCase();
-              const isClay = mediumLower.includes("clay") ||
-                             mediumLower.includes("ceramic") ||
-                             mediumLower.includes("stoneware") ||
-                             mediumLower.includes("porcelain") ||
-                             mediumLower.includes("terracotta") ||
-                             mediumLower.includes("pottery") ||
-                             mediumLower.includes("earthenware") ||
-                             classificationLower.includes("clay") ||
-                             classificationLower.includes("ceramic") ||
-                             classificationLower.includes("porcelain");
-
-              const finalMedium: "Painting" | "Clay & Ceramic" = isClay ? "Clay & Ceramic" : "Painting";
-              const title = item.title || "Untitled Masterpiece";
-              const artist = item.artistDisplayName || "Unknown Master Artist";
-              const origin = item.country || item.culture || "Global Collection";
-              const urduText = `${title} ایک شاہکار تخلیق ہے جسے ماہر فنکار ${artist} نے کمال مہارت سے تراشا ہے۔ یہ فن پارہ ${origin} کے تاریخی ورثے اور اس دور کی جمالیاتی سوچ کا ایک زندہ ثبوت ہے۔ اس کی ہر لکیر اور رنگ ایک گہری کہانی سناتا ہے جو دیکھنے والے کو اپنے سحر میں جکڑ لیتی ہے۔`;
-              const price = Math.floor(Math.random() * 8 + 2) * 10000 + 15000;
-
-              return {
-                id: `met_${item.objectID}`,
-                title: title,
-                artist_name: artist,
-                artist_bio: item.artistDisplayBio || item.creditLine || "A significant contribution to the world of fine arts.",
-                year_created: item.objectEndDate || item.objectBeginDate || 1880,
-                origin_country: origin,
-                origin_city: item.city || item.repository || "Global Arts Collection",
-                price: price,
-                medium: finalMedium,
-                dimensions: item.dimensions || "Dimensions variable",
-                rating: Math.floor(Math.random() * 2) + 4,
-                image_url: item.primaryImageSmall || item.primaryImage,
-                audio_description_url: "https://actions.google.com/sounds/v1/ambiences/morning_birds.ogg",
-                audio_urdu_url: "https://actions.google.com/sounds/v1/ambiences/night_crickets.ogg",
-                text_description: `This exquisite piece, titled '${title}', reflects the profound vision of ${artist}. It stands as a silent witness to the cultural legacy of ${origin}, inviting us to contemplate the balance of form and emotion captured in ${finalMedium.toLowerCase()}.`,
-                text_description_urdu: urduText,
-                is_published: true,
-                created_at: new Date().toISOString()
-              };
-            } catch (err) {
-              console.log(`Met Museum ID ${id} fetch skipped (network limit/CORS).`);
-              return null;
-            }
-          };
-
-          // Helper to fetch details from Cleveland Museum of Art (CMA) and verify images
-          const fetchClevelandDetails = async (qString: string, limitCount: number): Promise<Artwork[]> => {
-            try {
-              const res = await fetch(`https://openaccess-api.clevelandart.org/api/artworks/?has_image=1&q=${qString}&limit=20`);
-              if (!res.ok) return [];
-              const payload = await res.json();
-              if (!payload || !Array.isArray(payload.data)) return [];
-
-              const results: Artwork[] = [];
-              for (const item of payload.data) {
-                if (results.length >= limitCount) break;
-
-                // Verify image
-                const imageUrl = item.images?.web?.url || item.images?.print?.url;
-                if (!imageUrl || typeof imageUrl !== "string" || imageUrl.trim() === "") {
-                  continue;
-                }
-                if (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
-                  continue;
-                }
-                if (imageUrl.includes("placeholder") || imageUrl.includes("null") || imageUrl.includes("undefined")) {
-                  continue;
-                }
-
-                const titleLower = (item.title || "").toLowerCase();
-                const creatorsList = item.creators || [];
-                const creatorName = creatorsList[0]?.description || "Unknown Master Artist";
-                const artistLower = creatorName.toLowerCase();
-                const origin = item.culture && item.culture.length > 0 ? item.culture[0] : "Global Collection";
-                const originLower = origin.toLowerCase();
-
-                if (
-                  originLower.includes("israel") ||
-                  originLower.includes("tel aviv") ||
-                  titleLower.includes("israel") ||
-                  artistLower.includes("israel")
-                ) {
-                  continue;
-                }
-
-                const mediumLower = (item.medium || "").toLowerCase();
-                const typeLower = (item.type || "").toLowerCase();
-                const isClay = mediumLower.includes("clay") ||
-                               mediumLower.includes("ceramic") ||
-                               mediumLower.includes("stoneware") ||
-                               mediumLower.includes("porcelain") ||
-                               mediumLower.includes("terracotta") ||
-                               mediumLower.includes("pottery") ||
-                               mediumLower.includes("earthenware") ||
-                               typeLower.includes("clay") ||
-                               typeLower.includes("ceramic") ||
-                               typeLower.includes("porcelain");
-
-                const finalMedium: "Painting" | "Clay & Ceramic" = isClay ? "Clay & Ceramic" : "Painting";
-                const title = item.title || "Untitled Masterpiece";
-                const artist = creatorName;
-                const urduText = `${title} فن کاری کا ایک بے مثال نمونہ ہے جسے ${artist} نے نہایت باریک بینی سے تخلیق کیا ہے۔ یہ تخلیق ${origin} کے تہذیبی حسن اور فنکارانہ گہرائی کو بیان کرتی ہے، جو زمان و مکاں کی قید سے آزاد ہو کر ایک ابدی پیغام دیتی ہے۔`;
-                const price = Math.floor(Math.random() * 8 + 2) * 10000 + 15000;
-
-                results.push({
-                  id: `cma_${item.id || item.accession_number || Math.random().toString()}`,
-                  title: title,
-                  artist_name: artist,
-                  artist_bio: creatorsList[0]?.biography || item.creditline || "A masterpiece held in high regard for its historical and artistic value.",
-                  year_created: item.creation_date_earliest || item.creation_date_latest || 1880,
-                  origin_country: origin,
-                  origin_city: "Global Arts Exhibition",
-                  price: price,
-                  medium: finalMedium,
-                  dimensions: item.dimensions || "Dimensions variable",
-                  rating: Math.floor(Math.random() * 2) + 4,
-                  image_url: imageUrl,
-                  audio_description_url: "https://actions.google.com/sounds/v1/ambiences/morning_birds.ogg",
-                  audio_urdu_url: "https://actions.google.com/sounds/v1/ambiences/night_crickets.ogg",
-                  text_description: `A masterfully crafted ${finalMedium.toLowerCase()} work titled '${title}'. Through this piece, the artist ${artist} captures the essence of ${origin} culture, offering a window into a world of timeless beauty and contemplative depth.`,
-                  text_description_urdu: urduText,
-                  is_published: true,
-                  created_at: new Date().toISOString()
-                });
-              }
-              return results;
-            } catch (err) {
-              console.log("Cleveland Museum API fetch skipped.");
-              return [];
-            }
-          };
-
-          // Fetch painting and ceramic object ID lists from Met Museum Collection API with highlight=true
-          // Search across a broad set of world art traditions so the gallery's
-          // country/culture coverage comes organically from the museums' own
-          // collections rather than any hand-picked list.
-          const metSearchTerms = [
-            "painting", "ceramics", "Mughal", "Persian miniature", "Ottoman",
-            "Chinese porcelain", "Japanese woodblock", "Korean celadon",
-            "African sculpture", "Latin American", "Islamic calligraphy",
-          ];
-
-          const metResults = await Promise.all(
-            metSearchTerms.map((term) =>
-              fetch(`https://collectionapi.metmuseum.org/public/collection/v1/search?q=${encodeURIComponent(term)}&hasImages=true`)
-                .then((res) => res.json())
-                .catch(() => ({ objectIDs: [] }))
-            )
-          );
-
-          // Interleave a couple of object IDs from each search term for variety
-          const metIdPool: number[] = [];
-          for (const result of metResults) {
-            const ids = (result?.objectIDs || []).slice(0, 4);
-            metIdPool.push(...ids);
-          }
-
-          const apiArtworks: Artwork[] = [];
-
-          // Sequential Met fetches (cap total successful pieces to stay fast)
-          let metCount = 0;
-          for (const id of metIdPool) {
-            if (metCount >= 12) break;
-            const art = await fetchMetDetails(id);
-            if (art) {
-              apiArtworks.push(art);
-              metCount++;
-              await new Promise(resolve => setTimeout(resolve, 150));
-            }
-          }
-
-          // Fetch remaining artworks from Cleveland Museum of Art across the
-          // same broad set of traditions
-          const cmaSearchTerms = ["painting", "ceramics", "porcelain", "textile", "miniature"];
-          for (const term of cmaSearchTerms) {
-            const results = await fetchClevelandDetails(term, 2);
-            apiArtworks.push(...results);
-          }
-
-          for (const art of apiArtworks) {
-            try {
-              await setDoc(doc(db, "artworks", art.id), art);
+              await setDoc(doc(db, "artworks", art.id), {
+                ...art,
+                created_at: art.created_at || new Date().toISOString()
+              });
             } catch (setErr) {
               handleFirestoreError(setErr, OperationType.WRITE, `artworks/${art.id}`);
             }
-          }
+          });
+          await Promise.all(writePromises);
+          console.log("Seeding completed successfully!");
         } catch (err) {
           console.error("Seeding failed: ", err);
         }
@@ -417,6 +227,18 @@ export default function App() {
     }
   };
 
+  // Shuffle the artworks list to re-curate the exhibition randomly
+  const handleShuffleGallery = () => {
+    setArtworks(prev => {
+      const shuffled = [...prev];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    });
+  };
+
   // Reset wall back to Met & CMA highlights
   const handleResetGallery = async () => {
     setIsResetting(true);
@@ -478,10 +300,16 @@ export default function App() {
     // 2. Medium filter
     const matchesMedium = selectedMedium === "All" || art.medium === selectedMedium;
 
-    // 3. Star Rating filter
+    // 3. Country / Origin filter with smart synonyms for Persian and Mughal
+    const matchesCountry = selectedCountry === "All" ||
+      art.origin_country.toLowerCase().includes(selectedCountry.toLowerCase()) ||
+      (selectedCountry.toLowerCase() === "iran" && art.origin_country.toLowerCase().includes("persian")) ||
+      (selectedCountry.toLowerCase() === "pakistan" && art.origin_country.toLowerCase().includes("mughal"));
+
+    // 4. Star Rating filter
     const matchesRating = selectedRating === 0 || art.rating >= selectedRating;
 
-    return matchesSearch && matchesMedium && matchesRating;
+    return matchesSearch && matchesMedium && matchesCountry && matchesRating;
   });
 
   return (
@@ -500,24 +328,18 @@ export default function App() {
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
             className="relative z-10"
           >
-            {heroPiece ? (
-              <SplashEntrance
-                heroArtwork={heroPiece}
-                onEnter={() => {
-                  setHasEntered(true);
+            <SplashEntrance
+              heroArtwork={heroPiece}
+              artworks={artworks}
+              onEnter={() => {
+                setHasEntered(true);
+                if (heroPiece) {
                   setSelectedArtwork(heroPiece);
-                }}
-              />
-            ) : (
-              <div className="min-h-screen w-full flex flex-col items-center justify-center gap-4 select-none">
-                <span className="font-serif text-3xl tracking-[0.2em] uppercase text-[#fffdf9]/80 italic">
-                  V'ARTLIER
-                </span>
-                <span className="font-mono text-[10px] tracking-widest uppercase text-[#d4af37]/60 animate-pulse">
-                  Curating the exhibition halls&hellip;
-                </span>
-              </div>
-            )}
+                } else if (artworks.length > 0) {
+                  setSelectedArtwork(artworks[0]);
+                }
+              }}
+            />
           </motion.div>
         ) : (
           /* Main Interactive Gallery Viewport */
@@ -534,6 +356,8 @@ export default function App() {
               setSearchQuery={setSearchQuery}
               selectedMedium={selectedMedium}
               setSelectedMedium={setSelectedMedium}
+              selectedCountry={selectedCountry}
+              setSelectedCountry={setSelectedCountry}
               selectedRating={selectedRating}
               setSelectedRating={setSelectedRating}
               viewMode={viewMode}
@@ -542,10 +366,11 @@ export default function App() {
               isResetting={isResetting}
               onIngestCMA={handleIngestCMAArtworks}
               isIngesting={isIngesting}
+              onShuffleGallery={handleShuffleGallery}
             />
 
             {/* Quick Navigation: Return to Splash Entrance */}
-            <div className="max-w-7xl mx-auto w-full px-6 pt-6 select-none">
+            <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 pt-6 select-none">
               <button
                 onClick={() => setHasEntered(false)}
                 className="group flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-amber-100/40 hover:text-[#fffdf9] transition-colors cursor-pointer"
@@ -556,7 +381,7 @@ export default function App() {
             </div>
 
             {/* Gallery Exhibition Walls container */}
-            <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-8 flex flex-col gap-12">
+            <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col gap-12">
               
               {/* Grand Selected Masterpiece Showcase (Single View Big) */}
               {selectedArtwork && (
@@ -587,6 +412,7 @@ export default function App() {
                       onClick={() => {
                         setSearchQuery("");
                         setSelectedMedium("All");
+                        setSelectedCountry("All");
                         setSelectedRating(0);
                       }}
                       className="px-4 py-2 bg-[#1e1919] hover:bg-[#2a2323] border border-[#2e2626] rounded-sm text-[10px] font-mono uppercase tracking-wider text-amber-100/60 hover:text-[#fffdf9] transition-all cursor-pointer"
@@ -622,9 +448,9 @@ export default function App() {
                     </div>
                     
                     {/* Horizontal scroll container */}
-                    <div className="flex gap-8 overflow-x-auto py-6 px-4 -mx-4 gallery-scroll snap-x">
+                    <div className="flex gap-6 sm:gap-8 overflow-x-auto py-6 px-1 gallery-scroll snap-x">
                       {filteredArtworks.map((art) => (
-                        <div key={art.id} className="w-[300px] md:w-[420px] shrink-0 snap-start">
+                        <div key={art.id} className="w-[285px] sm:w-[350px] md:w-[400px] shrink-0 snap-start">
                           <ArtworkCard
                             artwork={art}
                             isAudioActive={activeAudioArtwork?.id === art.id}
@@ -657,7 +483,7 @@ export default function App() {
                     </div>
 
                     {/* CSS columns-based masonry */}
-                    <div className="columns-1 md:columns-2 lg:columns-3 gap-8 space-y-8">
+                    <div className="columns-1 sm:columns-2 lg:columns-3 gap-6 sm:gap-8 space-y-6 sm:space-y-8">
                       {filteredArtworks.map((art) => (
                         <div key={art.id} className="break-inside-avoid">
                           <ArtworkCard

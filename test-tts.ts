@@ -3,12 +3,19 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 async function run() {
   try {
     const res = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
-      contents: "Hello world",
-      config: { responseModalities: [Modality.AUDIO] }
+      model: "gemini-3.1-flash-tts-preview",
+      contents: [{ parts: [{ text: 'Say cheerfully: Have a wonderful day!' }] }],
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: 'Kore' },
+          },
+        },
+      },
     });
-    console.log("Success with Modality.AUDIO:", !!res.candidates[0].content.parts[0].inlineData);
-  } catch (e) {
+    console.log("Success with Modality.AUDIO:", !!res.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data);
+  } catch (e: any) {
     console.error("Error Modality:", e.message);
   }
 }

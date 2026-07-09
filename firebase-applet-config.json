@@ -1,12 +1,11 @@
 {
-  "_comment": "This file is no longer read by the app. Firebase config now comes from environment variables — see .env.example. This placeholder is kept only for reference/local tooling.",
-  "projectId": "",
-  "appId": "",
-  "apiKey": "",
-  "authDomain": "",
-  "firestoreDatabaseId": "",
-  "storageBucket": "",
-  "messagingSenderId": "",
+  "projectId": "gen-lang-client-0816528582",
+  "appId": "1:847167905752:web:8e27283623da528e9f5cad",
+  "apiKey": "AIzaSyDSf8Blb1vRf9M6G_kEZirywdLuNgsEpZ8",
+  "authDomain": "gen-lang-client-0816528582.firebaseapp.com",
+  "firestoreDatabaseId": "ai-studio-vartlier-abceb91a-4448-4c7a-9f84-12c4501c2b8e",
+  "storageBucket": "gen-lang-client-0816528582.firebasestorage.app",
+  "messagingSenderId": "847167905752",
   "measurementId": "",
-  "oAuthClientId": ""
+  "oAuthClientId": "847167905752-snsksfivfnvp5ajdo8dvtckhn03gtjhh.apps.googleusercontent.com"
 }
