@@ -9,7 +9,12 @@ const AMBIENT_UR = "https://actions.google.com/sounds/v1/ambiences/night_cricket
 const EXCLUDED = /israel|tel aviv/i;
 
 const classifyMedium = (source: string): Artwork["medium"] =>
-  /ceramic|clay|porcelain|pottery|glass/i.test(source) ? "Clay & Ceramic" : "Painting";
+  /ceramic|clay|porcelain|pottery|glass|earthenware|terracotta/i.test(source) ? "Clay & Ceramic" : "Painting";
+
+// The gallery only hangs paintings and ceramics — sculptures are skipped entirely
+const isSculpture = (source: string) =>
+  /sculpture|statue|schist|stone|marble|bronze|relief|carv|figurine|bust/i.test(source) &&
+  !/ceramic|clay|porcelain|pottery|earthenware|terracotta/i.test(source);
 
 async function searchMet(query: string, limit = 8): Promise<Artwork[]> {
   const searchRes = await fetch(
@@ -34,7 +39,8 @@ async function searchMet(query: string, limit = 8): Promise<Artwork[]> {
     .filter((o) =>
       o &&
       (o.primaryImageSmall || o.primaryImage) &&
-      !EXCLUDED.test(`${o.title} ${o.artistDisplayName} ${o.country} ${o.culture}`)
+      !EXCLUDED.test(`${o.title} ${o.artistDisplayName} ${o.country} ${o.culture}`) &&
+      !isSculpture(`${o.medium || ""} ${o.classification || ""} ${o.objectName || ""}`)
     )
     .map(toMetArtwork);
 }
@@ -54,7 +60,7 @@ function toMetArtwork(o: any): Artwork {
       image_url: o.primaryImageSmall || o.primaryImage,
       audio_description_url: AMBIENT_EN,
       audio_urdu_url: AMBIENT_UR,
-      text_description: `“${o.title}”${o.artistDisplayName ? ` by ${o.artistDisplayName}` : ""} — ${o.medium || "a masterwork"}${o.period ? `, ${o.period}` : ""}. From the Metropolitan Museum of Art collection.`,
+      text_description: `${o.title}${o.artistDisplayName ? ` by ${o.artistDisplayName}` : ""} — ${o.medium || "a masterwork"}${o.period ? `, ${o.period}` : ""}. From the Metropolitan Museum of Art collection.`,
       text_description_urdu: `${o.title} میٹروپولیٹن میوزیم آف آرٹ کے مجموعے کا ایک شاندار شاہکار ہے۔`,
       is_published: true,
   };
@@ -71,7 +77,8 @@ async function searchCleveland(query: string, limit = 8): Promise<Artwork[]> {
   return data
     .filter((item) =>
       item?.images?.web?.url &&
-      !EXCLUDED.test(`${item.title} ${item.creators?.[0]?.description || ""} ${item.culture?.[0] || ""}`)
+      !EXCLUDED.test(`${item.title} ${item.creators?.[0]?.description || ""} ${item.culture?.[0] || ""}`) &&
+      !isSculpture(`${item.type || ""} ${item.technique || ""}`)
     )
     .map(toCmaArtwork);
 }
@@ -90,7 +97,7 @@ function toCmaArtwork(item: any): Artwork {
       image_url: item.images.web.url,
       audio_description_url: AMBIENT_EN,
       audio_urdu_url: AMBIENT_UR,
-      text_description: `“${item.title}” — ${item.type || "a masterwork"}${item.culture?.[0] ? ` from ${item.culture[0]}` : ""}. From the Cleveland Museum of Art collection.`,
+      text_description: `${item.title} — ${item.type || "a masterwork"}${item.culture?.[0] ? ` from ${item.culture[0]}` : ""}. From the Cleveland Museum of Art collection.`,
       text_description_urdu: `${item.title} کلیولینڈ میوزیم آف آرٹ کے مجموعے کا ایک شاندار شاہکار ہے۔`,
       is_published: true,
   };

@@ -273,6 +273,9 @@ export default function App() {
 
   // Handle Spotlight / Examine Selection
   const handleSelectArtwork = (art: Artwork) => {
+    // Museum-search results live outside `artworks`; absorb the clicked piece so
+    // the selection-sync effect doesn't revert the spotlight to artworks[0]
+    setArtworks(prev => prev.some(a => a.id === art.id) ? prev : [...prev, art]);
     setSelectedArtwork(art);
     const element = document.getElementById("spotlight-showcase");
     if (element) {
