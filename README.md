@@ -1,63 +1,88 @@
-# 🏛️ V'Artlier — Global Virtual Art Gallery
+# 🏛️ V'Artlier — DYLP Hackathon Project
 
-**V'Artlier** is an immersive, premium virtual art gallery application engineered to replicate the quiet, sophisticated atmosphere of walking through an elite modern museum. By moving away from traditional, rigid web grids, the platform introduces fluid spatial depth, micro-interactions, and visual breathing room to present curated global artwork as a true sensory experience.
+**V'Artlier** is a hackathon-ready immersive virtual art gallery built for the DYLP event. It blends modern gallery design with bilingual audio storytelling and sharable artwork discovery, bringing curated global museum pieces to a sophisticated web audience.
+
+---
+
+## 🌟 Project Summary
+
+V'Artlier presents a museum-grade online exhibition with:
+- English and Urdu audioguides that can be toggled mid-playback.
+- Visual storytelling with curated artwork cards, spotlight showcases, and immersive gallery layouts.
+- Shareable artwork links using a dedicated URL query param.
+- GitHub Pages deployment support at `https://irijabbutt.github.io/V-Artlier`.
 
 ---
 
 ## 🚀 Key Features
 
-* **Dual-Language Audioguide System:** Built using the Web Audio API, allowing visitors to seamlessly switch mid-stream between global English descriptions and a beautifully narrated **native Urdu voiceover track** without losing current playback progress tracking state.
-* **Automated Data Pipeline:** A serverless background integration powered by Gen 2 Firebase Cloud Functions that automatically fetches open-access raw data from global museum APIs every 24 hours.
-* **Real-Time Visual Ingestion:** Leverages live Firestore snapshot subscriptions (`onSnapshot()`) to automatically catch database insertions, instantly sliding new curated items onto the UI layout with a custom Framer Motion "New Arrival" entry animation.
-* **Adaptive Medium Styling:** Natively handles diverse mediums, rendering classical canvas paintings with deep physical drop shadows and utilizing mouse-coordinate tracking to give sculptural ceramic or clay pieces a subtle interactive 3D tilt effect.
+* **Bilingual Audioguide Experience**
+  - Seamless English/Urdu audio toggle.
+  - Language switching works across both card-level previews and the main player.
+* **Shareable Artwork Links**
+  - Each artwork can be shared as a direct link with `?artwork=<id>`.
+  - The modal now generates a stable share URL for the GitHub Pages site.
+* **Immersive Gallery UX**
+  - Fluid layout modes: horizontal explorer and masonry exhibition.
+  - Medium-aware styling for paintings and clay/ceramic sculptures.
+  - Animated entrance splash, live highlight states, and polished hover interactions.
+* **Data Resilience**
+  - Seeded from public museum APIs for rich artwork metadata.
+  - Real-time Firestore sync keeps the gallery up to date when backend ingestion runs.
 
 ---
 
-## 🛠️ Tech Stack & Architecture
+## 🧩 Tech Stack
 
-* **Frontend:** Next.js 14+ (App Router) / React, TypeScript, Tailwind CSS, Framer Motion, Web Audio API
-* **Backend & Database:** Firebase (Cloud Firestore + Cloud Storage + Gen 2 Cloud Functions)
-* **Data Sources:** Art Institute of Chicago Open Access API / The Metropolitan Museum of Art API
+* **Frontend:** React, TypeScript, Vite, Tailwind CSS, Motion
+* **Server:** Express, Firebase Admin, Node.js
+* **APIs:** Firestore, Met Museum API, Cleveland Museum of Art API, Gemini AI enrichment
+* **Deployment Target:** GitHub Pages (`gh-pages`) for static site delivery
 
 ---
 
-## 💾 Project Setup & Directory Mapping
+## 💻 Local Setup
 
-### 1. Database & Cloud Configuration
-Review [firebase.md](firebase.md) for full setup instructions, including:
-- Document Schemas for the `artworks` Firestore collection.
-- Requirements for establishing composite sorting indexes (`rating` Descending, `created_at` Descending).
-- Storage bucket organizational folders (`artworks/images/` and `artworks/audio/`).
-
-### 2. Frontend Environment Setup
-Create a `.env.local` file in the root directory and append your web app credentials:
-```env
-NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-```
-
-### 3. Execution
-To spin up your local development space:
 ```bash
-# Install dependencies
 npm install
-
-# Run the development server
 npm run dev
 ```
 
+Then open `http://localhost:3000`.
+
+### Build for production
+
+```bash
+npm run build
+```
+
 ---
 
-## 🧪 Engineering Success Metrics
-- Filters react instantly across global datasets without full-page reloads.
-- Audio language tracks toggle seamlessly mid-stream without losing current playback timestamp states.
-- Background animations execute at sub-pixel speeds without dropping layout performance or harming accessibility.
+## 📦 GitHub Pages Deployment
 
-## Development Collaboration
-- Rijab Butt 
-- Abdul Moiz
-- Muhammad Wadood Azhar
+This repository is configured for GitHub Pages deployment with the base path `/V-Artlier/`.
+The site is published (or will publish) at:
+
+**https://irijabbutt.github.io/V-Artlier**
+
+The GitHub Actions workflow builds the app and deploys the `dist/` output to the `gh-pages` branch.
+
+---
+
+## 📝 Notes for Hackathon Judges
+
+This DYLP entry showcases a strong UX-first gallery concept with:
+- bilingual educational audio,
+- live shareability,
+- curated museum-sourced artwork,
+- and a polished premium presentation layer.
+
+The README reflects the current app flow, build setup, and deployment path for easy evaluation.
+
+---
+
+## 👥 Team
+
+* Rijab Butt
+* Abdul Moiz
+* Muhammad Wadood Azhar
