@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300..700;1,300..700&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=JetBrains+Mono:wght@200..800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-truffle: #161212;
+  --color-halogen: #fffdf9;
+  --color-gold-accent: #d4af37;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-truffle);
+    color: var(--color-halogen);
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+  }
+}
+
+/* Custom Scrollbar for Great Hall horizontal showcase */
+.gallery-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.gallery-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 253, 249, 0.03);
+  border-radius: 999px;
+}
+.gallery-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 253, 249, 0.15);
+  border-radius: 999px;
+}
+.gallery-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(212, 175, 55, 0.4);
+}
+
+/* Ambient Shimmer Keyframes */
+@keyframes ambientGlow {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+    opacity: 0.15;
+  }
+  33% {
+    transform: translate(40px, -50px) scale(1.15);
+    opacity: 0.25;
+  }
+  66% {
+    transform: translate(-30px, 30px) scale(0.9);
+    opacity: 0.12;
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+    opacity: 0.15;
+  }
+}
+
+.animate-ambient-glow-1 {
+  animation: ambientGlow 25s infinite ease-in-out alternate;
+}
+
+.animate-ambient-glow-2 {
+  animation: ambientGlow 35s infinite ease-in-out alternate-reverse;
+}
+
+/* Urdu typography helper */
+.urdu-text {
+  font-family: "Cormorant Garamond", serif;
+  direction: rtl;
+  text-align: right;
+  line-height: 1.8;
+}

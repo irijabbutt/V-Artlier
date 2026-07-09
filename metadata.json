@@ -1,0 +1,8 @@
+{
+  "name": "V'Artlier",
+  "description": "An immersive global virtual art gallery presenting paintings and ceramic masterpieces with dual-language audioguides and seamless social sharing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

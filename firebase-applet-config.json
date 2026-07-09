@@ -1,0 +1,12 @@
+{
+  "_comment": "This file is no longer read by the app. Firebase config now comes from environment variables — see .env.example. This placeholder is kept only for reference/local tooling.",
+  "projectId": "",
+  "appId": "",
+  "apiKey": "",
+  "authDomain": "",
+  "firestoreDatabaseId": "",
+  "storageBucket": "",
+  "messagingSenderId": "",
+  "measurementId": "",
+  "oAuthClientId": ""
+}

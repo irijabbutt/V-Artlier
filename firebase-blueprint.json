@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "artwork": {
+      "title": "Artwork",
+      "description": "Elegantly curated virtual gallery pieces spanning paintings and ceramics.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the artwork."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the art piece."
+        },
+        "artist_name": {
+          "type": "string",
+          "description": "Full name of the artist/creator."
+        },
+        "artist_bio": {
+          "type": "string",
+          "description": "Brief curatorial biography of the artist."
+        },
+        "year_created": {
+          "type": "integer",
+          "description": "The year the artwork was created."
+        },
+        "origin_country": {
+          "type": "string",
+          "description": "Territorial region or nation of origin."
+        },
+        "medium": {
+          "type": "string",
+          "enum": ["Painting", "Clay & Ceramic"],
+          "description": "The core artistic material medium."
+        },
+        "dimensions": {
+          "type": "string",
+          "description": "Physical frame sizing dimensions."
+        },
+        "rating": {
+          "type": "integer",
+          "description": "Curator aesthetic rating strictly from 1 to 5 stars."
+        },
+        "image_url": {
+          "type": "string",
+          "description": "Direct URL reference pointing to the high-res visual asset."
+        },
+        "audio_description_url": {
+          "type": "string",
+          "description": "URL to the English vocal audioguide narration sound file."
+        },
+        "audio_urdu_url": {
+          "type": "string",
+          "description": "URL to the Urdu vocal audioguide narration sound file."
+        },
+        "text_description": {
+          "type": "string",
+          "description": "Written English curatorial narration text."
+        },
+        "text_description_urdu": {
+          "type": "string",
+          "description": "Written Urdu translation narration text."
+        },
+        "is_published": {
+          "type": "boolean",
+          "description": "Global publish flag on exhibition walls."
+        }
+      },
+      "required": ["title", "artist_name", "medium", "image_url", "text_description", "is_published"]
+    }
+  },
+  "firestore": {
+    "artworks/{artworkId}": {
+      "schema": "artwork",
+      "description": "Curated artworks on the exhibition walls."
+    }
+  }
+}

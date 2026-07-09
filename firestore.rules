@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // Validation Blueprint for Artwork
+    function isValidArtwork(data) {
+      return data.title is string && data.title.size() <= 300
+        && data.artist_name is string && data.artist_name.size() <= 300
+        && data.medium is string && (data.medium == 'Painting' || data.medium == 'Clay & Ceramic')
+        && data.image_url is string && data.image_url.size() <= 1000
+        && data.text_description is string && data.text_description.size() <= 10000
+        && data.is_published is bool;
+    }
+
+    // 2. Allow public access to read and write artworks for the live gallery simulation
+    match /artworks/{artworkId} {
+      allow read: if true;
+      allow create: if isValidId(artworkId) && isValidArtwork(incoming());
+      allow update: if isValidId(artworkId) && isValidArtwork(incoming());
+      allow delete: if isValidId(artworkId);
+    }
+  }
+}
+
