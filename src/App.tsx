@@ -9,7 +9,7 @@ import AudioPlayerController from "./components/AudioPlayerController";
 import ShareModal from "./components/ShareModal";
 import ArtworkShowcaseBig from "./components/ArtworkShowcaseBig";
 import { Artwork, PlaybackLanguage } from "./types";
-import { searchMuseums, fetchOpeningCollection, fetchArtworkById } from "./museumApi";
+import { searchMuseums, fetchOpeningCollection, fetchArtworkById, fetchWebDescription } from "./museumApi";
 import { db, collection, setDoc, doc, onSnapshot, deleteDoc, getDocs, handleFirestoreError, OperationType, firebaseConfigValid } from "./firebase";
 
 export default function App() {
@@ -194,6 +194,24 @@ export default function App() {
       clearTimeout(timer);
     };
   }, [searchQuery, selectedCountry]);
+
+  // Enrich the spotlighted Met/Cleveland piece with a researched description
+  // from Wikipedia (once per piece) instead of the API template text
+  const webEnrichedIds = useRef(new Set<string>());
+  useEffect(() => {
+    const art = selectedArtwork;
+    if (!art || webEnrichedIds.current.has(art.id)) return;
+    if (!art.id.startsWith("met_") && !art.id.startsWith("cma_")) return;
+    webEnrichedIds.current.add(art.id);
+
+    fetchWebDescription(art).then((description) => {
+      if (!description) return;
+      const enrich = (a: Artwork) => a.id === art.id ? { ...a, text_description: description } : a;
+      setArtworks(prev => prev.map(enrich));
+      setRemoteResults(prev => prev.map(enrich));
+      setSelectedArtwork(prev => (prev && prev.id === art.id) ? { ...prev, text_description: description } : prev);
+    });
+  }, [selectedArtwork]);
 
   // Synchronize selected artwork on list update or on first load
   useEffect(() => {

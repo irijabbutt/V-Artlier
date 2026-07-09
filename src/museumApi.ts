@@ -144,6 +144,41 @@ export async function searchMuseums(query: string): Promise<Artwork[]> {
   return dedupe([...curated, ...met, ...cma]);
 }
 
+// Researched guide text from the web: search Wikipedia for the artwork (then
+// its artist) and use the encyclopedia extract instead of the API template.
+// Wikipedia's APIs are CORS-open, so this works on static hosting.
+async function wikiSummary(searchTerm: string): Promise<string | null> {
+  const searchRes = await fetch(
+    `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchTerm)}&format=json&origin=*&srlimit=1`
+  );
+  if (!searchRes.ok) return null;
+  const hit = (await searchRes.json())?.query?.search?.[0]?.title;
+  if (!hit) return null;
+
+  // Only accept a hit that plausibly matches the query (shares a word > 3 chars)
+  const words = searchTerm.toLowerCase().split(/\W+/).filter(w => w.length > 3);
+  if (!words.some(w => hit.toLowerCase().includes(w))) return null;
+
+  const sumRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(hit)}`);
+  if (!sumRes.ok) return null;
+  const extract = (await sumRes.json())?.extract;
+  return typeof extract === "string" && extract.length > 80 ? extract : null;
+}
+
+export async function fetchWebDescription(art: Artwork): Promise<string | null> {
+  try {
+    const byTitle = await wikiSummary(art.title);
+    if (byTitle) return byTitle;
+    if (art.artist_name && !/unknown/i.test(art.artist_name)) {
+      const byArtist = await wikiSummary(art.artist_name);
+      if (byArtist) return `${byArtist} This piece, “${art.title}”, is held in the museum's collection.`;
+    }
+  } catch {
+    // offline or rate-limited — keep the existing description
+  }
+  return null;
+}
+
 // Opening exhibition: a few culture themes fetched live so the gallery and
 // splash are populated with real museum pieces (never hardcoded defaults).
 const THEMES = [
