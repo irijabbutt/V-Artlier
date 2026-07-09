@@ -187,7 +187,7 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md select-none">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
         {/* Click outside to close */}
         <div className="absolute inset-0 cursor-default" onClick={onClose} />
 
@@ -196,7 +196,7 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.93, y: 15 }}
           transition={{ type: "spring", duration: 0.5, bounce: 0.15 }}
-          className="relative bg-[#1e1919] border border-[#d4af37]/30 rounded-sm shadow-2xl w-full max-w-2xl overflow-hidden z-10 flex flex-col md:flex-row"
+          className="relative bg-[#1e1919] border border-[#d4af37]/30 rounded-sm shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto md:max-h-[95vh] lg:max-h-none md:overflow-hidden z-10 flex flex-col md:flex-row scrollbar-thin scrollbar-thumb-amber-500/20 scrollbar-track-transparent"
         >
           {/* Close button */}
           <button
@@ -207,7 +207,7 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
           </button>
 
           {/* Left Side: Ticket Sticker Mockup Pre-visualization */}
-          <div className="p-6 bg-[#120e0e] md:w-1/2 flex flex-col justify-center items-center border-b md:border-b-0 md:border-r border-[#2e2626]/60">
+          <div className="p-6 bg-[#120e0e] md:w-1/2 flex flex-col justify-center items-center border-b md:border-b-0 md:border-r border-[#2e2626]/60 select-none">
             <span className="font-mono text-[9px] uppercase tracking-wider text-amber-100/40 mb-3 block">
               Story Sticker Preview
             </span>

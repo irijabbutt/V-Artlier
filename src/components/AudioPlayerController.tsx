@@ -282,11 +282,20 @@ export default function AudioPlayerController({
                 const utterance = new SpeechSynthesisUtterance(textToSpeak);
                 utterance.lang = "ur-PK";
                 utterance.rate = 0.85;
-                const match = voices.find(v => v.lang.toLowerCase().startsWith("ur")) ||
-                            voices.find(v => v.lang.toLowerCase().startsWith("hi"));
-                // If no Urdu/Hindi voice is installed on this device, still speak
-                // with the browser's default voice rather than silently doing
-                // nothing — the text itself remains Urdu.
+                const urduHindiVoices = voices.filter(v => 
+                  v.lang.toLowerCase().startsWith("ur") || 
+                  v.lang.toLowerCase().startsWith("hi")
+                );
+                const isUrduFemale = (v: SpeechSynthesisVoice) => {
+                  const nameLower = v.name.toLowerCase();
+                  return nameLower.includes("female") ||
+                         nameLower.includes("google") ||
+                         nameLower.includes("kalpana") ||
+                         nameLower.includes("siri") ||
+                         nameLower.includes("swara") ||
+                         nameLower.includes("hemant");
+                };
+                const match = urduHindiVoices.find(isUrduFemale) || urduHindiVoices[0];
                 if (match) { utterance.voice = match; utterance.lang = match.lang; }
                 utterance.onend = () => {
                   if (currentId === playbackIdRef.current && progress >= 90) {
@@ -310,8 +319,22 @@ export default function AudioPlayerController({
             const utterance = new SpeechSynthesisUtterance(textToSpeak);
             utterance.lang = "en-US";
             utterance.rate = 0.95;
-            const match = voices.find(v => v.lang.toLowerCase().includes("en-us")) ||
-                          voices.find(v => v.lang.toLowerCase().includes("en"));
+            const englishVoices = voices.filter(v => v.lang.toLowerCase().includes("en"));
+            const isFemale = (v: SpeechSynthesisVoice) => {
+              const nameLower = v.name.toLowerCase();
+              return nameLower.includes("female") ||
+                     nameLower.includes("zira") ||
+                     nameLower.includes("samantha") ||
+                     nameLower.includes("karen") ||
+                     nameLower.includes("hazel") ||
+                     nameLower.includes("victoria") ||
+                     nameLower.includes("susan") ||
+                     nameLower.includes("google us english") ||
+                     nameLower.includes("siri");
+            };
+            const match = englishVoices.find(isFemale) ||
+                          englishVoices.find(v => v.lang.toLowerCase().includes("en-us")) ||
+                          englishVoices[0];
             if (match) { utterance.voice = match; utterance.lang = match.lang; }
             utterance.onend = () => {
               if (currentId === playbackIdRef.current && progress >= 90) {
@@ -370,7 +393,7 @@ export default function AudioPlayerController({
       {/* Real-time Bilingual Caption Ticker Tray */}
       <div className="max-w-4xl mx-auto mb-3 px-4 py-2 bg-black/50 border border-[#d4af37]/15 rounded-sm flex items-start gap-2.5 shadow-inner">
         <Sparkles className="w-3.5 h-3.5 text-[#d4af37] animate-pulse shrink-0 mt-0.5" />
-        <div className={`w-full text-xs leading-relaxed ${language === 'ur' ? 'text-right text-amber-200 urdu-text text-sm' : 'text-amber-50/90'}`}>
+        <div className={`w-full text-xs leading-relaxed ${language === 'ur' ? 'text-right text-amber-200 urdu-text text-xs' : 'text-amber-50/90'}`}>
           <span className="font-mono text-[9px] uppercase tracking-wider text-[#d4af37] mr-1.5 inline-block border border-[#d4af37]/20 px-1 py-0.2 rounded-xs">
             {language === 'ur' ? 'اردو ترجمہ' : 'EXHIBIT NARRATION'}
           </span>

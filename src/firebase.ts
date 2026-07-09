@@ -2,15 +2,14 @@ import { initializeApp } from "firebase/app";
 import { getFirestore, collection, addDoc, getDocs, setDoc, doc, query, orderBy, onSnapshot, limit, deleteDoc, Firestore } from "firebase/firestore";
 import { getAuth, Auth } from "firebase/auth";
 
-// Firebase config is injected at build time from environment variables
-// (populated from the FB_* repository secrets in CI — see .env.example).
-// Nothing sensitive is hardcoded or committed to source control.
+// Firebase config is loaded exclusively from Vite environment variables (VITE_FB_*).
+// This prevents raw credentials in firebase-applet-config.json from being statically bundled into the client JS.
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FB_APIKEY,
   authDomain: import.meta.env.VITE_FB_AUTHDOMAIN,
   projectId: import.meta.env.VITE_FB_PROJECTID,
   storageBucket: import.meta.env.VITE_FB_STORAGEBUCKET,
-  messagingSenderId: import.meta.env.VITE_FB_MSGSENDERID,
+  messagingSenderId: import.meta.env.VITE_FB_MSGSENDERID || import.meta.env.VITE_FB_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FB_APPID,
 };
 
@@ -32,7 +31,8 @@ if (!firebaseConfigValid) {
 const app = initializeApp(firebaseConfig);
 
 // Use custom firestoreDatabaseId if provided, else (default)
-export const db = getFirestore(app, import.meta.env.VITE_FB_FIRESTOREDATABASEID || "(default)");
+const firestoreDbId = import.meta.env.VITE_FB_FIRESTOREDATABASEID || "(default)";
+export const db = getFirestore(app, firestoreDbId);
 export let auth: Auth | null = null;
 
 if (firebaseConfigValid) {

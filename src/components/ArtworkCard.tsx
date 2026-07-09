@@ -65,12 +65,13 @@ export default function ArtworkCard({
   return (
     <motion.div
       ref={cardRef}
+      layout
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       style={tiltStyle}
       initial={isNewArrival ? { opacity: 0, y: 50, scale: 0.95 } : { opacity: 1 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
       onClick={(e) => {
         const target = e.target as HTMLElement;
         if (target.closest("button") || target.closest(".dropdown-menu") || target.tagName === "BUTTON") {
