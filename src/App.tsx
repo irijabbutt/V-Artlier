@@ -9,7 +9,7 @@ import AudioPlayerController from "./components/AudioPlayerController";
 import ShareModal from "./components/ShareModal";
 import ArtworkShowcaseBig from "./components/ArtworkShowcaseBig";
 import { Artwork, PlaybackLanguage } from "./types";
-import { db, collection, setDoc, doc, onSnapshot, deleteDoc, getDocs, handleFirestoreError, OperationType } from "./firebase";
+import { db, collection, setDoc, doc, onSnapshot, deleteDoc, getDocs, handleFirestoreError, OperationType, firebaseConfigValid } from "./firebase";
 
 export default function App() {
   const [hasEntered, setHasEntered] = useState(false);
@@ -38,6 +38,26 @@ export default function App() {
 
   // Extract a hero piece for the entrance landing (populated once live data arrives)
   const [heroPiece, setHeroPiece] = useState<Artwork | null>(null);
+
+  if (!firebaseConfigValid) {
+    return (
+      <div className="min-h-screen bg-[#161212] text-[#fffdf9] flex items-center justify-center px-6 py-10">
+        <div className="max-w-2xl rounded-3xl border border-[#d4af37]/30 bg-[#120e0e]/95 p-10 shadow-[0_0_40px_rgba(212,175,55,0.18)]">
+          <h1 className="font-serif text-3xl text-[#fffdf9] mb-4">Configuration Required</h1>
+          <p className="text-amber-100/70 leading-relaxed text-sm">
+            The deployed site is missing Firebase build-time configuration. GitHub Pages requires the frontend to be built with valid `VITE_FB_*` environment variables before deployment.
+          </p>
+          <div className="mt-6 rounded-2xl bg-[#1e1919] border border-[#2e2626] p-4 text-[13px] text-amber-100/60">
+            <p className="font-mono uppercase tracking-[0.2em] text-[#d4af37] mb-2">Required variables</p>
+            <code className="block whitespace-pre-wrap">VITE_FB_APIKEY{`\n`}VITE_FB_AUTHDOMAIN{`\n`}VITE_FB_PROJECTID{`\n`}VITE_FB_STORAGEBUCKET{`\n`}VITE_FB_MESSAGING_SENDER_ID{`\n`}VITE_FB_APPID</code>
+          </div>
+          <p className="mt-6 text-amber-100/60 text-sm">
+            Once the environment values are provided at build time, rebuild and deploy the site again to restore the gallery.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (artworks.length > 0) {

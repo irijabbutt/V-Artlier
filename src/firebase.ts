@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDocs, setDoc, doc, query, orderBy, onSnapshot, limit, deleteDoc } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getFirestore, collection, addDoc, getDocs, setDoc, doc, query, orderBy, onSnapshot, limit, deleteDoc, Firestore } from "firebase/firestore";
+import { getAuth, Auth } from "firebase/auth";
 
 // Firebase config is injected at build time from environment variables
 // (populated from the FB_* repository secrets in CI — see .env.example).
@@ -10,11 +10,18 @@ const firebaseConfig = {
   authDomain: import.meta.env.VITE_FB_AUTHDOMAIN,
   projectId: import.meta.env.VITE_FB_PROJECTID,
   storageBucket: import.meta.env.VITE_FB_STORAGEBUCKET,
-  messagingSenderId: import.meta.env.VITE_FB_MSGSENDERID,
+  messagingSenderId: import.meta.env.VITE_FB_MESSAGING_SENDER_ID || import.meta.env.VITE_FB_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FB_APPID,
 };
 
-if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
+export const firebaseConfigValid = Boolean(
+  firebaseConfig.apiKey &&
+  firebaseConfig.authDomain &&
+  firebaseConfig.projectId &&
+  firebaseConfig.appId
+);
+
+if (!firebaseConfigValid) {
   console.error(
     "Firebase config is missing. Make sure VITE_FB_* environment variables " +
     "are set (see .env.example) before running `npm run dev` or `npm run build`."
@@ -26,7 +33,16 @@ const app = initializeApp(firebaseConfig);
 
 // Use custom firestoreDatabaseId if provided, else (default)
 export const db = getFirestore(app, import.meta.env.VITE_FB_FIRESTOREDATABASEID || "(default)");
-export const auth = getAuth(app);
+export let auth: Auth | null = null;
+
+if (firebaseConfigValid) {
+  auth = getAuth(app);
+} else {
+  console.warn(
+    "Firebase auth initialization skipped because the build-time configuration is incomplete. " +
+    "The app will render a placeholder instead of connecting to Firestore."
+  );
+}
 
 export enum OperationType {
   CREATE = 'create',
@@ -58,12 +74,12 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: auth.currentUser?.uid || null,
-      email: auth.currentUser?.email || null,
-      emailVerified: auth.currentUser?.emailVerified || null,
-      isAnonymous: auth.currentUser?.isAnonymous || null,
-      tenantId: auth.currentUser?.tenantId || null,
-      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+      userId: auth?.currentUser?.uid || null,
+      email: auth?.currentUser?.email || null,
+      emailVerified: auth?.currentUser?.emailVerified || null,
+      isAnonymous: auth?.currentUser?.isAnonymous || null,
+      tenantId: auth?.currentUser?.tenantId || null,
+      providerInfo: auth?.currentUser?.providerData?.map(provider => ({
         providerId: provider.providerId,
         email: provider.email,
       })) || []
