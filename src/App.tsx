@@ -9,11 +9,15 @@ import AudioPlayerController from "./components/AudioPlayerController";
 import ShareModal from "./components/ShareModal";
 import ArtworkShowcaseBig from "./components/ArtworkShowcaseBig";
 import { Artwork, PlaybackLanguage } from "./types";
+import { DEFAULT_ARTWORKS } from "./data";
 import { db, collection, setDoc, doc, onSnapshot, deleteDoc, getDocs, handleFirestoreError, OperationType, firebaseConfigValid } from "./firebase";
 
 export default function App() {
   const [hasEntered, setHasEntered] = useState(false);
-  const [artworks, setArtworks] = useState<Artwork[]>([]);
+  // Start with the curated defaults so the splash is never blank while live data loads
+  const [artworks, setArtworks] = useState<Artwork[]>(DEFAULT_ARTWORKS);
+  // Museum API (Met + Cleveland + GAC) search results merged into the gallery
+  const [remoteResults, setRemoteResults] = useState<Artwork[]>([]);
   const [newArrivalId, setNewArrivalId] = useState<string | null>(null);
 
   // Spotlight Selected Artwork State (Showcase single view big)
@@ -39,17 +43,6 @@ export default function App() {
 
   // Extract a hero piece for the entrance landing (populated once live data arrives)
   const [heroPiece, setHeroPiece] = useState<Artwork | null>(null);
-
-  useEffect(() => {
-    if (artworks.length > 0) {
-      if (!selectedArtwork) {
-        setSelectedArtwork(artworks[0]);
-      }
-      if (!heroPiece) {
-        setHeroPiece(artworks[Math.floor(Math.random() * artworks.length)]);
-      }
-    }
-  }, [artworks, selectedArtwork, heroPiece]);
 
   // Call the server-side Gemini API with Google Search Grounding to enrich descriptions in English & Urdu
   const handleEnrichArtwork = async (artworkToEnrich: Artwork) => {
@@ -125,7 +118,7 @@ export default function App() {
         }
 
         if (isActive) {
-          setArtworks([]);
+          setArtworks(DEFAULT_ARTWORKS);
         }
       };
 
@@ -140,8 +133,8 @@ export default function App() {
       if (!isActive) return;
 
       if (snapshot.empty) {
-        console.log("Firestore empty; no default artworks will be seeded.");
-        setArtworks([]);
+        console.log("Firestore empty; showing built-in default artworks locally (nothing is seeded).");
+        setArtworks(DEFAULT_ARTWORKS);
       } else {
         const loaded: Artwork[] = [];
         snapshot.forEach((docSnap) => {
@@ -177,6 +170,32 @@ export default function App() {
       unsubscribe();
     };
   }, [firebaseConfigValid, searchQuery]);
+
+  // Search the Met & Cleveland museum APIs (plus GAC registry) whenever the user types a query
+  useEffect(() => {
+    const query = searchQuery.trim();
+    if (!query) {
+      setRemoteResults([]);
+      return;
+    }
+    let isActive = true;
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/search-artworks?q=${encodeURIComponent(query)}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (isActive && Array.isArray(data)) {
+          setRemoteResults(data as Artwork[]);
+        }
+      } catch (error) {
+        console.warn("Museum API search failed", error);
+      }
+    }, 500);
+    return () => {
+      isActive = false;
+      clearTimeout(timer);
+    };
+  }, [searchQuery]);
 
   // Synchronize selected artwork on list update or on first load
   useEffect(() => {
@@ -310,30 +329,36 @@ export default function App() {
     }
   };
 
-  // Filter artworks on keywords
-  const filteredArtworks = artworks.filter((art) => {
-    // 1. Fuzzy query filter
-    const query = searchQuery.toLowerCase().trim();
-    const matchesSearch = query === "" || 
-      art.title.toLowerCase().includes(query) ||
-      art.artist_name.toLowerCase().includes(query) ||
-      art.origin_country.toLowerCase().includes(query) ||
-      art.medium.toLowerCase().includes(query);
-
-    // 2. Medium filter
+  // Medium / country / rating facet filters (shared by local and museum API results)
+  const matchesFacets = (art: Artwork) => {
     const matchesMedium = selectedMedium === "All" || art.medium === selectedMedium;
 
-    // 3. Country / Origin filter with smart synonyms for Persian and Mughal
     const matchesCountry = selectedCountry === "All" ||
       art.origin_country.toLowerCase().includes(selectedCountry.toLowerCase()) ||
       (selectedCountry.toLowerCase() === "iran" && art.origin_country.toLowerCase().includes("persian")) ||
       (selectedCountry.toLowerCase() === "pakistan" && art.origin_country.toLowerCase().includes("mughal"));
 
-    // 4. Star Rating filter
     const matchesRating = selectedRating === 0 || art.rating >= selectedRating;
 
-    return matchesSearch && matchesMedium && matchesCountry && matchesRating;
+    return matchesMedium && matchesCountry && matchesRating;
+  };
+
+  // Local collection: fuzzy query + facets
+  const localMatches = artworks.filter((art) => {
+    const query = searchQuery.toLowerCase().trim();
+    const matchesSearch = query === "" ||
+      art.title.toLowerCase().includes(query) ||
+      art.artist_name.toLowerCase().includes(query) ||
+      art.origin_country.toLowerCase().includes(query) ||
+      art.medium.toLowerCase().includes(query);
+    return matchesSearch && matchesFacets(art);
   });
+
+  // Museum API results already match the query server-side; apply facets and dedupe
+  const filteredArtworks = [
+    ...localMatches,
+    ...remoteResults.filter((art) => matchesFacets(art) && !localMatches.some((local) => local.id === art.id)),
+  ];
 
   return (
     <div className="relative min-h-screen bg-[#161212] overflow-x-hidden text-[#fffdf9] font-sans pb-32 selection:bg-[#d4af37]/30 selection:text-[#fffdf9]">
@@ -354,13 +379,16 @@ export default function App() {
             <SplashEntrance
               heroArtwork={heroPiece}
               artworks={artworks}
-              onEnter={() => {
+              onEnter={(splashArtwork) => {
                 setHasEntered(true);
-                if (heroPiece) {
-                  setSelectedArtwork(heroPiece);
-                } else if (artworks.length > 0) {
-                  setSelectedArtwork(artworks[0]);
+                const focus = splashArtwork || heroPiece || artworks[0] || null;
+                if (focus) {
+                  setSelectedArtwork(focus);
                 }
+                // Let the gallery view mount, then bring the splash piece into the spotlight
+                setTimeout(() => {
+                  document.getElementById("spotlight-showcase")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 400);
               }}
             />
           </motion.div>

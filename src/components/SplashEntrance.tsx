@@ -8,7 +8,7 @@ import brandLogo from "../../assets/v'artlier logo.svg";
 interface SplashEntranceProps {
   heroArtwork: Artwork | null;
   artworks: Artwork[];
-  onEnter: () => void;
+  onEnter: (activeArtwork: Artwork | null) => void;
 }
 
 export default function SplashEntrance({ heroArtwork, artworks, onEnter }: SplashEntranceProps) {
@@ -143,7 +143,7 @@ export default function SplashEntrance({ heroArtwork, artworks, onEnter }: Splas
 
       {/* Scroll Down / Enter Indicator */}
       <motion.button
-        onClick={onEnter}
+        onClick={() => onEnter(activeArtwork ?? null)}
         whileHover={{ y: 3 }}
         whileTap={{ scale: 0.97 }}
         className="flex flex-col items-center cursor-pointer group pb-4 text-[#fffdf9]/70 hover:text-[#fffdf9] transition-colors"
