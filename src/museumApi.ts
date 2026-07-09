@@ -1,4 +1,5 @@
 import { Artwork } from "./types";
+import { PAKISTAN_ARTWORKS } from "./pakistanArtworks";
 
 // Direct browser calls to the museum open-access APIs (both send
 // Access-Control-Allow-Origin: *), so the gallery works on static hosting
@@ -105,6 +106,8 @@ function toCmaArtwork(item: any): Artwork {
 
 // Resolve a single shared artwork id ("met_123" / "cma_456") straight from its museum API
 export async function fetchArtworkById(id: string): Promise<Artwork | null> {
+  const curated = PAKISTAN_ARTWORKS.find(a => a.id === id);
+  if (curated) return curated;
   try {
     if (id.startsWith("met_")) {
       const res = await fetch(`https://collectionapi.metmuseum.org/public/collection/v1/objects/${id.slice(4)}`);
@@ -130,11 +133,15 @@ const dedupe = (artworks: Artwork[]) => {
 };
 
 export async function searchMuseums(query: string): Promise<Artwork[]> {
+  const q = query.toLowerCase();
+  const curated = PAKISTAN_ARTWORKS.filter(a =>
+    `${a.title} ${a.artist_name} ${a.origin_country}`.toLowerCase().includes(q)
+  );
   const [met, cma] = await Promise.all([
     searchMet(query).catch(() => []),
     searchCleveland(query).catch(() => []),
   ]);
-  return dedupe([...met, ...cma]);
+  return dedupe([...curated, ...met, ...cma]);
 }
 
 // Opening exhibition: a few culture themes fetched live so the gallery and
@@ -153,5 +160,6 @@ const THEMES = [
 export async function fetchOpeningCollection(): Promise<Artwork[]> {
   const picked = [...THEMES].sort(() => 0.5 - Math.random()).slice(0, 3);
   const results = await Promise.all(picked.map((theme) => searchMuseums(theme).catch(() => [])));
-  return dedupe(results.flat());
+  // Contemporary Pakistani painters (curated from Artmajeur) always hang in the exhibition
+  return dedupe([...PAKISTAN_ARTWORKS, ...results.flat()]);
 }
