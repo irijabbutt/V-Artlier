@@ -9,7 +9,7 @@ import AudioPlayerController from "./components/AudioPlayerController";
 import ShareModal from "./components/ShareModal";
 import ArtworkShowcaseBig from "./components/ArtworkShowcaseBig";
 import { Artwork, PlaybackLanguage } from "./types";
-import { searchMuseums, fetchOpeningCollection, fetchArtworkById, fetchWebDescription } from "./museumApi";
+import { searchMuseums, fetchOpeningCollection, fetchArtworkById, fetchWebInfo } from "./museumApi";
 import { db, collection, setDoc, doc, onSnapshot, deleteDoc, getDocs, handleFirestoreError, OperationType, firebaseConfigValid } from "./firebase";
 
 export default function App() {
@@ -18,6 +18,7 @@ export default function App() {
   // Museum API (Met + Cleveland + GAC) search results merged into the gallery
   const [remoteResults, setRemoteResults] = useState<Artwork[]>([]);
   const [newArrivalId, setNewArrivalId] = useState<string | null>(null);
+  const [galleryOrder, setGalleryOrder] = useState<string[]>([]);
 
   // Spotlight Selected Artwork State (Showcase single view big)
   const [selectedArtwork, setSelectedArtwork] = useState<Artwork | null>(null);
@@ -204,12 +205,18 @@ export default function App() {
     if (!art.id.startsWith("met_") && !art.id.startsWith("cma_")) return;
     webEnrichedIds.current.add(art.id);
 
-    fetchWebDescription(art).then((description) => {
-      if (!description) return;
-      const enrich = (a: Artwork) => a.id === art.id ? { ...a, text_description: description } : a;
+    fetchWebInfo(art).then(({ description, artistBio }) => {
+      if (!description && !artistBio) return;
+      const enrich = (a: Artwork) => a.id === art.id
+        ? {
+            ...a,
+            ...(description ? { text_description: description } : {}),
+            ...(artistBio ? { artist_bio: artistBio } : {}),
+          }
+        : a;
       setArtworks(prev => prev.map(enrich));
       setRemoteResults(prev => prev.map(enrich));
-      setSelectedArtwork(prev => (prev && prev.id === art.id) ? { ...prev, text_description: description } : prev);
+      setSelectedArtwork(prev => (prev && prev.id === art.id) ? enrich(prev) : prev);
     });
   }, [selectedArtwork]);
 
@@ -301,16 +308,32 @@ export default function App() {
     }
   };
 
-  // Shuffle the artworks list to re-curate the exhibition randomly
+  // Shuffle the exhibition randomly — both the local collection and any
+  // museum-search results currently hung (otherwise filtered views never move)
+  const shuffleList = <T,>(list: T[]): T[] => {
+    const shuffled = [...list];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
   const handleShuffleGallery = () => {
-    setArtworks(prev => {
-      const shuffled = [...prev];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    const visibleIds = filteredArtworks.map((art) => art.id);
+    setGalleryOrder((previousOrder) => {
+      if (visibleIds.length < 2) return previousOrder;
+
+      let shuffledIds = shuffleList(visibleIds);
+      if (shuffledIds.every((id, index) => id === visibleIds[index])) {
+        shuffledIds = [...shuffledIds].reverse();
       }
-      return shuffled;
+
+      const visibleIdSet = new Set(visibleIds);
+      setSelectedArtwork(filteredArtworks.find((art) => art.id === shuffledIds[0]) || selectedArtwork);
+      return [...shuffledIds, ...previousOrder.filter((id) => !visibleIdSet.has(id))];
     });
+    setArtworks((previousArtworks) => shuffleList(previousArtworks));
+    setRemoteResults((previousResults) => shuffleList(previousResults));
   };
 
   // Reset wall back to Met & CMA highlights
@@ -374,10 +397,19 @@ export default function App() {
   });
 
   // Museum API results already match the query server-side; apply facets and dedupe
-  const filteredArtworks = [
+  const filteredArtworksUnordered = [
     ...localMatches,
     ...remoteResults.filter((art) => matchesFacets(art) && !localMatches.some((local) => local.id === art.id)),
   ];
+  const galleryOrderIndex = new Map(galleryOrder.map((id, index) => [id, index]));
+  const filteredArtworks = [...filteredArtworksUnordered].sort((a, b) => {
+    const aIndex = galleryOrderIndex.get(a.id);
+    const bIndex = galleryOrderIndex.get(b.id);
+    if (aIndex === undefined && bIndex === undefined) return 0;
+    if (aIndex === undefined) return 1;
+    if (bIndex === undefined) return -1;
+    return aIndex - bIndex;
+  });
 
   return (
     <div className="relative min-h-screen bg-[#161212] overflow-x-hidden text-[#fffdf9] font-sans pb-32 selection:bg-[#d4af37]/30 selection:text-[#fffdf9]">

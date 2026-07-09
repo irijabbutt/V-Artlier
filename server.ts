@@ -39,7 +39,6 @@ const googleArtsAndCultureRegistry: Record<string, any[]> = {
       year_created: 1615,
       origin_country: "Pakistan",
       origin_city: "Lahore, Pakistan",
-      price: 135000,
       medium: "Painting",
       dimensions: "34.5 cm x 22.0 cm",
       rating: 5,
@@ -60,7 +59,6 @@ const googleArtsAndCultureRegistry: Record<string, any[]> = {
       year_created: 1220,
       origin_country: "Syria",
       origin_city: "Raqqa, Syria",
-      price: 64000,
       medium: "Clay & Ceramic",
       dimensions: "28.5 cm diameter",
       rating: 5,
@@ -81,7 +79,6 @@ const googleArtsAndCultureRegistry: Record<string, any[]> = {
       year_created: -575,
       origin_country: "Iraq",
       origin_city: "Babylon, Iraq",
-      price: 125000,
       medium: "Clay & Ceramic",
       dimensions: "122.0 cm x 228.0 cm",
       rating: 5,
@@ -102,7 +99,6 @@ const googleArtsAndCultureRegistry: Record<string, any[]> = {
       year_created: 1522,
       origin_country: "Iran",
       origin_city: "Tabriz, Iran",
-      price: 160000,
       medium: "Painting",
       dimensions: "47.0 cm x 32.0 cm",
       rating: 5,
@@ -123,7 +119,6 @@ const googleArtsAndCultureRegistry: Record<string, any[]> = {
       year_created: -1250,
       origin_country: "Egypt",
       origin_city: "Thebes, Egypt",
-      price: 180000,
       medium: "Painting",
       dimensions: "Wall painting scale",
       rating: 5,
@@ -144,7 +139,6 @@ const googleArtsAndCultureRegistry: Record<string, any[]> = {
       year_created: 1150,
       origin_country: "Korea",
       origin_city: "Gangjin, South Korea",
-      price: 92000,
       medium: "Clay & Ceramic",
       dimensions: "42.0 cm height",
       rating: 5,
@@ -165,7 +159,6 @@ const googleArtsAndCultureRegistry: Record<string, any[]> = {
       year_created: 1788,
       origin_country: "India",
       origin_city: "Kangra, India",
-      price: 85000,
       medium: "Painting",
       dimensions: "28.0 cm x 20.0 cm",
       rating: 5,
@@ -186,7 +179,6 @@ const googleArtsAndCultureRegistry: Record<string, any[]> = {
       year_created: -490,
       origin_country: "Greece",
       origin_city: "Athens, Greece",
-      price: 110000,
       medium: "Clay & Ceramic",
       dimensions: "62.5 cm height",
       rating: 5,
@@ -207,7 +199,6 @@ const googleArtsAndCultureRegistry: Record<string, any[]> = {
       year_created: 1575,
       origin_country: "Turkey",
       origin_city: "Iznik, Turkey",
-      price: 68000,
       medium: "Clay & Ceramic",
       dimensions: "84.0 cm x 62.0 cm",
       rating: 5,
@@ -228,7 +219,6 @@ const googleArtsAndCultureRegistry: Record<string, any[]> = {
       year_created: 1479,
       origin_country: "Mexico",
       origin_city: "Tenochtitlan, Mexico",
-      price: 115000,
       medium: "Clay & Ceramic",
       dimensions: "358 cm diameter",
       rating: 5,
@@ -249,7 +239,6 @@ const googleArtsAndCultureRegistry: Record<string, any[]> = {
       year_created: 500,
       origin_country: "Peru",
       origin_city: "Trujillo, Peru",
-      price: 72000,
       medium: "Clay & Ceramic",
       dimensions: "27.5 cm x 18.0 cm",
       rating: 5,
@@ -270,7 +259,6 @@ const googleArtsAndCultureRegistry: Record<string, any[]> = {
       year_created: 780,
       origin_country: "China",
       origin_city: "Chang'an, China",
-      price: 110000,
       medium: "Painting",
       dimensions: "20.8 cm x 139.8 cm",
       rating: 5,
@@ -291,7 +279,6 @@ const googleArtsAndCultureRegistry: Record<string, any[]> = {
       year_created: 1856,
       origin_country: "Japan",
       origin_city: "Edo (Tokyo), Japan",
-      price: 95000,
       medium: "Painting",
       dimensions: "34.0 cm x 22.5 cm",
       rating: 5,
@@ -322,16 +309,15 @@ function toMuseumArtworkRecord(payload: any, country: string, fallbackTitle?: st
     id: payload?.id || payload?.objectID || `museum_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     title,
     artist_name: creator,
-    artist_bio: payload?.artistBio || payload?.artist_bio || `A notable work from the ${country} collection`,
+    artist_bio: payload?.artistDisplayBio || payload?.artistBio || payload?.artist_bio || "",
     year_created: yearCreated,
     origin_country: country,
     origin_city: payload?.city || payload?.origin_city || country,
-    price: payload?.price || 65000 + Math.floor(Math.random() * 50000),
     medium: classifyMuseumMedium(payload?.medium, payload?.type),
     dimensions: payload?.dimensions || payload?.dimensions?.toString() || "Dimensions variable",
     rating: 5,
     image_url: imageUrl,
-    text_description: payload?.text_description || `A masterfully crafted artwork titled “${title}” from the ${country} collection.`,
+    text_description: payload?.text_description || `A masterfully crafted artwork titled "${title}" from the ${country} collection, described through its subject, materials, and cultural setting.`,
     text_description_urdu: payload?.text_description_urdu || `${title} ${country} کے مجموعہ کا ایک شاندار شاہکار ہے۔`,
     is_published: true,
     audio_description_url: 'https://actions.google.com/sounds/v1/ambiences/morning_birds.ogg',
@@ -372,7 +358,7 @@ async function searchMuseumArtworks(query: string) {
           objectBeginDate: primary.objectBeginDate || 2024,
           medium: primary.medium || '',
           dimensions: primary.dimensions || 'Dimensions variable',
-          text_description: `A museum-quality artwork titled “${primary.title || 'Untitled Masterpiece'}” from the Metropolitan Museum of Art collection.`,
+          text_description: `A museum-quality artwork titled "${primary.title || 'Untitled Masterpiece'}" from the Metropolitan Museum of Art collection, described through its subject, materials, and cultural setting.`,
           text_description_urdu: `${primary.title || 'Untitled Masterpiece'} میٹروپولیٹن میوزیم آف آرٹ کے مجموعہ کا ایک شاندار شاہکار ہے۔`
         }, 'United States'));
       } catch (err) {
@@ -398,7 +384,7 @@ async function searchMuseumArtworks(query: string) {
         artistDisplayName: item.creators?.[0]?.description || 'Unknown Master Artist',
         medium: item.type || item.medium || '',
         dimensions: item.dimensions || 'Dimensions variable',
-        text_description: `A masterfully crafted artwork titled “${item.title || 'Untitled Masterpiece'}” from the Cleveland Museum of Art collection.`,
+        text_description: `A masterfully crafted artwork titled "${item.title || 'Untitled Masterpiece'}" from the Cleveland Museum of Art collection, described through its subject, materials, and cultural setting.`,
         text_description_urdu: `${item.title || 'Untitled Masterpiece'} کلیولینڈ میوزیم آف آرٹ کے مجموعہ کا ایک شاندار شاہکار ہے۔`
       }, 'United States'));
     }
@@ -424,7 +410,6 @@ async function searchMuseumArtworks(query: string) {
       image_url: piece.image_url,
       origin_city: piece.origin_city,
       year_created: piece.year_created,
-      price: piece.price,
       rating: piece.rating,
     }, piece.origin_country || 'Global'));
   }
@@ -517,7 +502,8 @@ async function ingestCMAArtworks() {
                 let enDesc = `A masterfully crafted artwork titled '${art.title}'. Part of the Cleveland Museum of Art collection.`;
                 let urDesc = `${art.title} کلیولینڈ میوزیم آف آرٹ کے مجموعہ کا ایک شاندار شاہکار ہے۔`;
 
-                const prompt = `Generate a 2-paragraph professional museum description in English and a poetic translation in Urdu for this artwork:
+                const prompt = `Generate a 2-paragraph professional museum description in English and a poetic translation in Urdu for this artwork.
+                Focus on the artwork itself: subject, composition, medium, style, visible details, provenance, and cultural meaning. Do not write an artist biography.
                 Title: ${art.title}
                 Artist: ${art.creators?.[0]?.description || 'Unknown'}
                 Medium: ${art.type}
@@ -614,7 +600,8 @@ async function ingestMetArtworks() {
                     }
                     
                     // Generate descriptions using Gemini
-                    const prompt = `Generate a 2-paragraph professional museum description in English and a poetic translation in Urdu for this artwork:
+                    const prompt = `Generate a 2-paragraph professional museum description in English and a poetic translation in Urdu for this artwork.
+                    Focus on the artwork itself: subject, composition, medium, style, visible details, provenance, and cultural meaning. Do not write an artist biography.
                     Title: ${art.title}
                     Artist: ${art.artistDisplayName}
                     Medium: ${art.medium}
@@ -647,6 +634,7 @@ async function ingestMetArtworks() {
                         id: `met_${art.objectID}`,
                         title: art.title || 'Untitled Masterpiece',
                         artist_name: art.artistDisplayName || 'Unknown Master Artist',
+                        artist_bio: art.artistDisplayBio || '',
                         image_url: art.primaryImageSmall || art.primaryImage || '',
                         origin_country: country,
                         medium: (art.medium || '').toLowerCase().includes('ceramic') || (art.medium || '').toLowerCase().includes('clay') || (art.medium || '').toLowerCase().includes('porcelain') ? 'Clay & Ceramic' : 'Painting',
@@ -748,7 +736,8 @@ app.post("/api/enrich-description", async (req, res) => {
     }
 
     const prompt = `Research the historical artwork titled "${title}" by artist "${artist || 'Unknown'}" from "${origin || 'Unknown'}". 
-Using Google Search to verify accurate details, write a highly descriptive, professional 3-sentence museum curator note in English about its history, style, and significance.
+Using Google Search to verify accurate details, write a highly descriptive, professional 3-sentence museum curator note in English about the artwork's subject, composition, medium, style, provenance, and significance.
+Do not write an artist biography in this guide text. Mention the artist only when needed for attribution or art-historical context, not as the focus.
 Then, translate or adapt this into elegant, flowing, poetic Urdu (approx 3 sentences).
 Return the response as a JSON object with two fields:
 {

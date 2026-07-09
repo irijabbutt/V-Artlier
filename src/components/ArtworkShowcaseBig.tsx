@@ -41,7 +41,6 @@ export default function ArtworkShowcaseBig({
     );
   }
 
-  const price = artwork.price || 45000;
   const originCity = artwork.origin_city || artwork.origin_country || "Lahore, Pakistan";
 
   return (
@@ -258,12 +257,12 @@ export default function ArtworkShowcaseBig({
               </div>
             </div>
 
-            {/* Provenance Record & Historical Valuation */}
+            {/* Provenance Record */}
             <div className="mt-4 mb-6 p-4 bg-black/40 border border-[#d4af37]/20 rounded-sm">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-2 border-b border-[#2e2626]">
                 <span className="font-mono text-[9px] uppercase tracking-widest text-[#d4af37] flex items-center gap-1.5">
                   <History className="w-3.5 h-3.5 text-[#d4af37]" />
-                  Exhibition Provenance & Historical Record
+                  Exhibition Provenance Record
                 </span>
                 <span className="font-mono text-[9px] text-amber-200/80 uppercase tracking-wider flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-[#d4af37] animate-pulse" />
@@ -271,14 +270,12 @@ export default function ArtworkShowcaseBig({
                 </span>
               </div>
 
-              {/* Price & Provenance Row */}
+              {/* Collection Status & Provenance Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <span className="block font-mono text-[8px] uppercase tracking-wider text-amber-100/40">Historical Appraisal</span>
-                  <span className="font-serif text-lg text-[#d4af37] font-medium block mt-0.5">
-                    ${price.toLocaleString()} <span className="text-[10px] font-sans text-amber-100/40">USD</span>
-                  </span>
-                  <span className="block text-[8px] font-mono text-amber-100/30 mt-0.5">Estimated catalog value</span>
+                  <span className="block font-mono text-[8px] uppercase tracking-wider text-amber-100/40">Collection Status</span>
+                  <span className="font-serif text-lg text-[#d4af37] font-medium block mt-0.5">Not Listed for Sale</span>
+                  <span className="block text-[8px] font-mono text-amber-100/30 mt-0.5">Exhibition and archival record</span>
                 </div>
                 <div>
                   <span className="block font-mono text-[8px] uppercase tracking-wider text-amber-100/40">Provenance Origin</span>
@@ -292,7 +289,7 @@ export default function ArtworkShowcaseBig({
               {/* Museum Preservation context card */}
               <div className="p-3 bg-black/30 border border-[#2e2626]/40 rounded-xs">
                 <div className="text-[11px] font-sans text-amber-100/70 leading-relaxed">
-                  🏛️ <span className="font-semibold text-amber-50">Curator Note:</span> This masterpiece is categorized as a vital cultural heritage monument of <strong>{toSafeString(artwork.origin_country)}</strong>. Under strict preservation protocols, the estimated valuation of <strong>${price.toLocaleString()} USD</strong> serves purely for academic provenance, insurance records, and permanent archival appraisal, and is strictly not available for commercial acquisition.
+                  <span className="font-semibold text-amber-50">Curator Note:</span> This masterpiece is presented as a cultural and archival record of <strong>{toSafeString(artwork.origin_country)}</strong>. The exhibition focuses on provenance, material history, and interpretation; no commercial price is assigned here.
                 </div>
               </div>
             </div>

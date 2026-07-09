@@ -61,7 +61,7 @@ function toMetArtwork(o: any): Artwork {
       image_url: o.primaryImageSmall || o.primaryImage,
       audio_description_url: AMBIENT_EN,
       audio_urdu_url: AMBIENT_UR,
-      text_description: `${o.title}${o.artistDisplayName ? ` by ${o.artistDisplayName}` : ""} — ${o.medium || "a masterwork"}${o.period ? `, ${o.period}` : ""}. From the Metropolitan Museum of Art collection.`,
+      text_description: `${o.title || "This work"} — ${o.medium || "a masterwork"}${o.period ? `, ${o.period}` : ""}. Its materials, scale, and collection context point to the visual choices and cultural setting preserved in the Metropolitan Museum of Art collection.`,
       text_description_urdu: `${o.title} میٹروپولیٹن میوزیم آف آرٹ کے مجموعے کا ایک شاندار شاہکار ہے۔`,
       is_published: true,
   };
@@ -98,7 +98,7 @@ function toCmaArtwork(item: any): Artwork {
       image_url: item.images.web.url,
       audio_description_url: AMBIENT_EN,
       audio_urdu_url: AMBIENT_UR,
-      text_description: `${item.title} — ${item.type || "a masterwork"}${item.culture?.[0] ? ` from ${item.culture[0]}` : ""}. From the Cleveland Museum of Art collection.`,
+      text_description: `${item.title || "This work"} — ${item.type || "a masterwork"}${item.culture?.[0] ? ` from ${item.culture[0]}` : ""}. Its form, surface, and collection context point to the visual choices and cultural setting preserved in the Cleveland Museum of Art collection.`,
       text_description_urdu: `${item.title} کلیولینڈ میوزیم آف آرٹ کے مجموعے کا ایک شاندار شاہکار ہے۔`,
       is_published: true,
   };
@@ -165,18 +165,29 @@ async function wikiSummary(searchTerm: string): Promise<string | null> {
   return typeof extract === "string" && extract.length > 80 ? extract : null;
 }
 
-export async function fetchWebDescription(art: Artwork): Promise<string | null> {
-  try {
-    const byTitle = await wikiSummary(art.title);
-    if (byTitle) return byTitle;
-    if (art.artist_name && !/unknown/i.test(art.artist_name)) {
-      const byArtist = await wikiSummary(art.artist_name);
-      if (byArtist) return `${byArtist} This piece, “${art.title}”, is held in the museum's collection.`;
-    }
-  } catch {
-    // offline or rate-limited — keep the existing description
-  }
-  return null;
+// Description comes only from an article about the artwork itself — never the
+// artist's biography. The artist's article feeds artist_bio separately.
+export async function fetchWebInfo(art: Artwork): Promise<{ description: string | null; artistBio: string | null }> {
+  const hasArtist = !!art.artist_name && !/unknown/i.test(art.artist_name);
+  const [rawDescription, artistBio] = await Promise.all([
+    wikiSummary(art.title).catch(() => null),
+    hasArtist ? wikiSummary(art.artist_name).catch(() => null) : Promise.resolve(null),
+  ]);
+  // A title search can land on the artist's biography page — keep those out
+  const looksLikeBiography = (text: string) =>
+    /\b(was|is) an? [^.]{0,60}\b(painter|artist|calligrapher|sculptor|printmaker|potter|architect|photographer|engraver)\b/i.test(text.split(".")[0] || "");
+  const mentionsArtistMoreThanArtwork = (text: string) => {
+    if (!hasArtist) return false;
+    const lowerText = text.toLowerCase();
+    const lowerTitle = art.title.toLowerCase();
+    const lowerArtist = art.artist_name.toLowerCase();
+    return lowerText.includes(lowerArtist) && !lowerText.includes(lowerTitle);
+  };
+  const description =
+    rawDescription && !looksLikeBiography(rawDescription) && !mentionsArtistMoreThanArtwork(rawDescription)
+      ? rawDescription
+      : null;
+  return { description, artistBio };
 }
 
 // Opening exhibition: a few culture themes fetched live so the gallery and
