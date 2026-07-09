@@ -159,9 +159,10 @@ export default function App() {
     };
   }, [firebaseConfigValid]);
 
-  // Search the Met & Cleveland museum APIs (plus GAC registry) whenever the user types a query
+  // Search the Met & Cleveland museum APIs whenever the user types a query or
+  // picks an origin country, so filters always have live pieces to draw from
   useEffect(() => {
-    const query = searchQuery.trim();
+    const query = searchQuery.trim() || (selectedCountry !== "All" ? selectedCountry : "");
     if (!query) {
       setRemoteResults([]);
       return;
@@ -181,7 +182,7 @@ export default function App() {
       isActive = false;
       clearTimeout(timer);
     };
-  }, [searchQuery]);
+  }, [searchQuery, selectedCountry]);
 
   // Synchronize selected artwork on list update or on first load
   useEffect(() => {
