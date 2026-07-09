@@ -69,9 +69,6 @@ export default function AudioPlayerController({
     });
   };
 
-  // Slowed playback so the narration reads like unhurried poetry
-  const POETRY_RATE = 0.82;
-
   // Client-only young female narration via Google Translate's public TTS stream.
   // Works on static hosting (GitHub Pages) where the Gemini TTS server API doesn't exist.
   // ponytail: unofficial endpoint with ~200-char limit per request, so text is chunked
@@ -99,7 +96,6 @@ export default function AudioPlayerController({
         }
         const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(chunks[index++])}`;
         const audio = new Audio(url);
-        audio.playbackRate = POETRY_RATE;
         googleTTSAudioRef.current = audio;
         audio.onended = playNext;
         audio.onerror = () => reject(new Error("Google Translate TTS stream failed"));
@@ -146,8 +142,7 @@ export default function AudioPlayerController({
     const descUrdu = toSafeString(artwork.text_description_urdu);
     const text = language === "en" ? desc : (descUrdu || "");
     const wordCount = text.split(/\s+/).length;
-    // ~1.9 words/sec matches the slowed poetry-pace narration
-    const estDuration = Math.max(Math.ceil(wordCount / 1.9), 20);
+    const estDuration = Math.max(Math.ceil(wordCount / 2.3), 20);
     setDuration(estDuration);
     setProgress(0);
 
@@ -339,8 +334,7 @@ export default function AudioPlayerController({
 
                 const utterance = new SpeechSynthesisUtterance(speakText);
                 utterance.lang = "ur-PK";
-                utterance.rate = 0.75;
-                utterance.pitch = 1.15; // gentle, younger-sounding register
+                utterance.rate = 0.9;
                 const urduHindiVoices = voices.filter(v => 
                   v.lang.toLowerCase().startsWith("ur") || 
                   v.lang.toLowerCase().startsWith("hi")
@@ -379,8 +373,7 @@ export default function AudioPlayerController({
 
             const utterance = new SpeechSynthesisUtterance(speakText);
             utterance.lang = "en-US";
-            utterance.rate = 0.78;
-            utterance.pitch = 1.12; // gentle, younger-sounding register
+            utterance.rate = 0.92;
             const englishVoices = voices.filter(v => v.lang.toLowerCase().includes("en"));
             const isFemale = (v: SpeechSynthesisVoice) => {
               const nameLower = v.name.toLowerCase();
