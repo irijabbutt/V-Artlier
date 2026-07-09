@@ -69,6 +69,42 @@ export default function AudioPlayerController({
     });
   };
 
+  // Client-only female Urdu narration via Google Translate's public TTS stream.
+  // Works on static hosting (GitHub Pages) where the Gemini TTS server API doesn't exist.
+  // ponytail: unofficial endpoint with ~200-char limit per request, so text is chunked
+  // and played sequentially; upgrade path is a hosted TTS API when one is available.
+  const playGoogleTranslateUrdu = (text: string, currentId: number): Promise<void> => {
+    const chunks: string[] = [];
+    let buffer = "";
+    for (const word of text.split(/\s+/)) {
+      if (buffer && (buffer.length + word.length + 1) > 180) {
+        chunks.push(buffer);
+        buffer = word;
+      } else {
+        buffer = buffer ? `${buffer} ${word}` : word;
+      }
+    }
+    if (buffer) chunks.push(buffer);
+    if (chunks.length === 0) return Promise.resolve();
+
+    return new Promise((resolve, reject) => {
+      let index = 0;
+      const playNext = () => {
+        if (currentId !== playbackIdRef.current || index >= chunks.length) {
+          resolve();
+          return;
+        }
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ur&client=tw-ob&q=${encodeURIComponent(chunks[index++])}`;
+        const audio = new Audio(url);
+        googleTTSAudioRef.current = audio;
+        audio.onended = playNext;
+        audio.onerror = () => reject(new Error("Google Translate TTS stream failed"));
+        audio.play().catch(reject);
+      };
+      playNext();
+    });
+  };
+
   const stopAllAudio = () => {
     playbackIdRef.current++; // Increment to invalidate previous async fetches
     if (abortControllerRef.current) {
@@ -98,10 +134,9 @@ export default function AudioPlayerController({
     }
   }, [artwork]);
 
-  if (!artwork) return null;
-
   // Initialize simulated audio timeline
   useEffect(() => {
+    if (!artwork) return;
     // Calculate approximate narration duration: word count / 2.3 words per second + 5s buffer
     const desc = toSafeString(artwork.text_description);
     const descUrdu = toSafeString(artwork.text_description_urdu);
@@ -119,7 +154,8 @@ export default function AudioPlayerController({
   // Handle Speech Synthesis & Background Ambient Sound coordination
   useEffect(() => {
     stopAllAudio();
-    
+    if (!artwork) return;
+
     // Choose ambient loop (birds/crickets)
     const ambientUrl = language === "en" ? artwork.audio_description_url : artwork.audio_urdu_url;
     const audio = new Audio(ambientUrl);
@@ -171,7 +207,7 @@ export default function AudioPlayerController({
 
   const triggerPlayback = () => {
     try {
-      if (typeof window === "undefined") return;
+      if (typeof window === "undefined" || !artwork) return;
       
       const currentId = ++playbackIdRef.current;
       
@@ -270,16 +306,33 @@ export default function AudioPlayerController({
           .catch((err) => {
             if (err.name === 'AbortError') return;
             if (currentId !== playbackIdRef.current) return;
-            console.warn("Using local fallback:", err);
-            
+            console.warn("Gemini TTS unavailable, using Google Translate female Urdu voice:", err);
+
+            // Second tier: Google Translate TTS (female Urdu voice, works on static hosting)
+            playGoogleTranslateUrdu(cleanText, currentId)
+              .then(() => {
+                if (currentId === playbackIdRef.current && progress >= 90) {
+                  onTogglePlay();
+                  setProgress(100);
+                }
+              })
+              .catch((gtErr) => {
+                if (currentId !== playbackIdRef.current) return;
+                console.warn("Google Translate TTS failed, using browser speech fallback:", gtErr);
+                speakUrduWithWebSpeech(textToSpeak, currentId);
+              });
+          });
+
+        // Last resort: browser Web Speech (rarely ships an Urdu voice)
+        const speakUrduWithWebSpeech = (speakText: string, speakId: number) => {
             if (window.speechSynthesis) {
               // Clear queue one last time before fallback
               window.speechSynthesis.cancel();
 
               getVoicesAsync().then((voices) => {
-                if (currentId !== playbackIdRef.current) return;
+                if (speakId !== playbackIdRef.current) return;
 
-                const utterance = new SpeechSynthesisUtterance(textToSpeak);
+                const utterance = new SpeechSynthesisUtterance(speakText);
                 utterance.lang = "ur-PK";
                 utterance.rate = 0.85;
                 const urduHindiVoices = voices.filter(v => 
@@ -298,7 +351,7 @@ export default function AudioPlayerController({
                 const match = urduHindiVoices.find(isUrduFemale) || urduHindiVoices[0];
                 if (match) { utterance.voice = match; utterance.lang = match.lang; }
                 utterance.onend = () => {
-                  if (currentId === playbackIdRef.current && progress >= 90) {
+                  if (speakId === playbackIdRef.current && progress >= 90) {
                     onTogglePlay();
                     setProgress(100);
                   }
@@ -307,7 +360,7 @@ export default function AudioPlayerController({
                 window.speechSynthesis.speak(utterance);
               });
             }
-          });
+        };
       } else {
         // English playback via local WebSpeech
         if (window.speechSynthesis) {
@@ -386,6 +439,8 @@ export default function AudioPlayerController({
 
     // Note: Playback will resume via the triggerPlayback call if isPlaying is true
   };
+
+  if (!artwork) return null;
 
   return (
     <div className="fixed bottom-0 inset-x-0 z-50 p-4 bg-[#1e1919]/95 backdrop-blur-lg border-t border-[#d4af37]/40 shadow-[0_-15px_30px_rgba(0,0,0,0.9)] select-none">
