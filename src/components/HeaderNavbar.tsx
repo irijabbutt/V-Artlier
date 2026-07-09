@@ -16,8 +16,7 @@ interface HeaderNavbarProps {
   setViewMode: (mode: "horizontal" | "masonry") => void;
   onResetGallery: () => void;
   isResetting: boolean;
-  onIngestCMA?: () => void;
-  isIngesting?: boolean;
+  // removed ingest UI: gallery expansion handled server-side
   onShuffleGallery: () => void;
 }
 
@@ -34,8 +33,6 @@ export default function HeaderNavbar({
   setViewMode,
   onResetGallery,
   isResetting,
-  onIngestCMA,
-  isIngesting = false,
   onShuffleGallery
 }: HeaderNavbarProps) {
   const [localQuery, setLocalQuery] = useState(searchQuery);
@@ -111,18 +108,7 @@ export default function HeaderNavbar({
               </button>
             </div>
 
-            {/* Ingest New Artworks button */}
-            {onIngestCMA && (
-              <button
-                onClick={onIngestCMA}
-                disabled={isIngesting}
-                className="h-full px-2.5 sm:px-4 border border-[#d4af37]/30 hover:border-[#d4af37]/50 bg-[#d4af37]/5 hover:bg-[#d4af37]/10 active:scale-95 text-[#d4af37] rounded-sm transition-all flex items-center justify-center gap-1 sm:gap-1.5 shrink-0 cursor-pointer"
-                title="Expand the gallery collection with unique global masterworks"
-              >
-                <Sparkles className={`w-3 sm:w-3.5 h-3 sm:h-3.5 ${isIngesting ? "animate-spin" : ""}`} />
-                <span className="hidden sm:inline font-mono text-[9px] uppercase tracking-wider">Expand Gallery</span>
-              </button>
-            )}
+            {/* Ingest UI removed */}
           </div>
         </div>
 

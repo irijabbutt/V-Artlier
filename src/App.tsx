@@ -387,8 +387,6 @@ export default function App() {
               setViewMode={setViewMode}
               onResetGallery={handleResetGallery}
               isResetting={isResetting}
-              onIngestCMA={handleIngestCMAArtworks}
-              isIngesting={isIngesting}
               onShuffleGallery={handleShuffleGallery}
             />
 
@@ -442,13 +440,7 @@ export default function App() {
                     >
                       Clear Curation Filters
                     </button>
-                    <button
-                      onClick={handleIngestCMAArtworks}
-                      disabled={isIngesting}
-                      className="px-4 py-2 bg-[#d4af37]/10 hover:bg-[#d4af37]/15 border border-[#d4af37]/30 rounded-sm text-[10px] font-mono uppercase tracking-wider text-[#d4af37] hover:text-[#fffdf9] transition-all cursor-pointer flex items-center gap-1.5"
-                    >
-                      <span>{isIngesting ? "Expanding..." : "Expand Gallery"}</span>
-                    </button>
+                    {/* Expand Gallery button removed */}
                   </div>
                 </div>
               ) : (
