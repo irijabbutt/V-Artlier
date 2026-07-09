@@ -66,8 +66,36 @@ export default function SplashEntrance({ heroArtwork, artworks, onEnter }: Splas
         transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
         className="flex flex-col items-center text-center max-w-4xl"
       >
+<<<<<<< HEAD
         <div className="w-24 h-24 mb-6 relative md:w-28 md:h-28">
           <img src={brandLogo} alt="V'Artlier logo" className="w-full h-full object-contain" />
+=======
+        {/* Geometric Monogram Portal SVG */}
+        <div className="w-24 h-24 mb-6 relative md:w-28 md:h-28">
+          <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full text-[#fffdf9]">
+            {/* Concentric Squares */}
+            <rect x="35" y="25" width="45" height="45" stroke="currentColor" strokeWidth="1.2" strokeOpacity="0.8" />
+            <rect x="41" y="31" width="33" height="33" stroke="currentColor" strokeWidth="1" strokeOpacity="0.6" />
+            <rect x="47" y="37" width="21" height="21" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.4" />
+            <rect x="53" y="43" width="9" height="9" stroke="currentColor" strokeWidth="0.6" strokeOpacity="0.3" />
+
+            {/* Perspective Diagonal Guide Lines */}
+            <line x1="35" y1="25" x2="57.5" y2="47.5" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.4" />
+            <line x1="80" y1="25" x2="57.5" y2="47.5" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.4" />
+            <line x1="35" y1="70" x2="57.5" y2="47.5" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.4" />
+            <line x1="80" y1="70" x2="57.5" y2="47.5" stroke="currentColor" strokeWidth="0.8" strokeOpacity="0.4" />
+
+            {/* Intertwined V & A Monogram */}
+            {/* Outer V-A Stroke */}
+            <path d="M11 25 L35 70 L52.5 30 L70 70" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            {/* Inner V-A Stroke */}
+            <path d="M17 25 L38.5 65 L52.5 36 L66.5 65" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            {/* Outer Crossbar of A */}
+            <path d="M44 51 L61 51" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            {/* Inner Crossbar of A */}
+            <path d="M46 54 L59 54" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          </svg>
+>>>>>>> f76842695605803209b384a03fbde256f51798c6
         </div>
 
         {/* Wordmark */}
