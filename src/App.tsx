@@ -101,10 +101,16 @@ export default function App() {
     let isActive = true;
 
     if (!firebaseConfigValid || !db) {
-      // No Firestore: exhibition comes straight from the museum APIs
+      // No Firestore: exhibition comes straight from the museum APIs.
+      // Merge (not replace) so a shared-link piece resolved in parallel survives.
       fetchOpeningCollection()
         .then((remoteArtworks) => {
-          if (isActive) setArtworks(remoteArtworks);
+          if (isActive) {
+            setArtworks(prev => {
+              const seen = new Set(prev.map(a => a.id));
+              return [...prev, ...remoteArtworks.filter(a => !seen.has(a.id))];
+            });
+          }
         })
         .catch((error) => console.warn("Museum API opening collection failed", error));
       return () => {
@@ -120,7 +126,12 @@ export default function App() {
         console.log("Firestore empty; loading the opening collection from the museum APIs (nothing is seeded).");
         fetchOpeningCollection()
           .then((remoteArtworks) => {
-            if (isActive) setArtworks(remoteArtworks);
+            if (isActive) {
+              setArtworks(prev => {
+                const seen = new Set(prev.map(a => a.id));
+                return [...prev, ...remoteArtworks.filter(a => !seen.has(a.id))];
+              });
+            }
           })
           .catch((error) => console.warn("Museum API opening collection failed", error));
       } else {
