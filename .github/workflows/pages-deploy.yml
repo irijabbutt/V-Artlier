@@ -26,6 +26,14 @@ jobs:
 
       - name: Build frontend
         run: npm run build
+        env:
+          VITE_FB_APIKEY: ${{ secrets.FB_APIKEY }}
+          VITE_FB_APPID: ${{ secrets.FB_APPID }}
+          VITE_FB_AUTHDOMAIN: ${{ secrets.FB_AUTHDOMAIN }}
+          VITE_FB_MSGSENDERID: ${{ secrets.FB_MSGSENDERID }}
+          VITE_FB_PROJECTID: ${{ secrets.FB_PROJECTID }}
+          VITE_FB_STORAGEBUCKET: ${{ secrets.FB_STORAGEBUCKET }}
+          VITE_FB_FIRESTOREDATABASEID: ${{ secrets.FB_FIRESTOREDATABASEID }}
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
