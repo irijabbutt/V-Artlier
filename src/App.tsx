@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { ArrowLeft, Sparkles, AlertCircle, RefreshCw } from "lucide-react";
 import AmbientBackground from "./components/AmbientBackground";
@@ -9,7 +9,7 @@ import AudioPlayerController from "./components/AudioPlayerController";
 import ShareModal from "./components/ShareModal";
 import ArtworkShowcaseBig from "./components/ArtworkShowcaseBig";
 import { Artwork, PlaybackLanguage } from "./types";
-import { searchMuseums, fetchOpeningCollection } from "./museumApi";
+import { searchMuseums, fetchOpeningCollection, fetchArtworkById } from "./museumApi";
 import { db, collection, setDoc, doc, onSnapshot, deleteDoc, getDocs, handleFirestoreError, OperationType, firebaseConfigValid } from "./firebase";
 
 export default function App() {
@@ -201,21 +201,44 @@ export default function App() {
     }
   }, [artworks, selectedArtwork, heroPiece]);
 
-  // Auto-detect sharing link param if user opened a shared art link
+  // Opening a shared link (?artwork=<id>) lands straight on that piece in the
+  // spotlight showcase — never on the share screen
+  const sharedLinkHandled = useRef(false);
+  const sharedLinkFetching = useRef(false);
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const sharedArtId = params.get("artwork");
-    if (sharedArtId) {
-      const found = artworks.find(a => a.id === sharedArtId);
-      if (found) {
-        setHasEntered(true);
-        setSelectedArtwork(found);
-        // Automatically scroll to or open share modal for immediate immersion
-        setTimeout(() => {
-          setSharingArtwork(found);
-        }, 1000);
-      }
+    if (sharedLinkHandled.current) return;
+    const sharedArtId = new URLSearchParams(window.location.search).get("artwork");
+    if (!sharedArtId) {
+      sharedLinkHandled.current = true;
+      return;
     }
+
+    const focusShared = (art: Artwork) => {
+      setHasEntered(true);
+      setSelectedArtwork(art);
+      setTimeout(() => {
+        document.getElementById("spotlight-showcase")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 400);
+    };
+
+    const found = artworks.find(a => a.id === sharedArtId);
+    if (found) {
+      sharedLinkHandled.current = true;
+      focusShared(found);
+      return;
+    }
+
+    // Not in this visitor's collection: resolve it straight from the museum APIs.
+    // Firestore-only ids stay unhandled so a later snapshot load can still match.
+    if (sharedLinkFetching.current) return;
+    sharedLinkFetching.current = true;
+    fetchArtworkById(sharedArtId).then((art) => {
+      if (art) {
+        sharedLinkHandled.current = true;
+        setArtworks(prev => prev.some(a => a.id === art.id) ? prev : [art, ...prev]);
+        focusShared(art);
+      }
+    });
   }, [artworks]);
 
   // Handle Audioguide playback toggle
