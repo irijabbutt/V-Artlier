@@ -54,7 +54,7 @@ export default function App() {
   // Call the server-side Gemini API with Google Search Grounding to enrich descriptions in English & Urdu
   const handleEnrichArtwork = async (artworkToEnrich: Artwork) => {
     if (!firebaseConfigValid || !db) {
-      alert("Artwork enrichment requires Firebase configuration, so this demo is showing the built-in curated gallery.");
+      alert("Artwork enrichment requires Firebase configuration, so this demo is currently waiting for live artwork data.");
       return;
     }
 
@@ -180,10 +180,20 @@ export default function App() {
 
   // Synchronize selected artwork on list update or on first load
   useEffect(() => {
-    if (!selectedArtwork && artworks.length > 0) {
+    if (artworks.length === 0) {
+      setSelectedArtwork(null);
+      setHeroPiece(null);
+      return;
+    }
+
+    if (!selectedArtwork || !artworks.some((art) => art.id === selectedArtwork.id)) {
       setSelectedArtwork(artworks[0]);
     }
-  }, [artworks, selectedArtwork]);
+
+    if (!heroPiece || !artworks.some((art) => art.id === heroPiece.id)) {
+      setHeroPiece(artworks[Math.floor(Math.random() * artworks.length)]);
+    }
+  }, [artworks, selectedArtwork, heroPiece]);
 
   // Auto-detect sharing link param if user opened a shared art link
   useEffect(() => {
@@ -245,7 +255,7 @@ export default function App() {
   // Reset wall back to Met & CMA highlights
   const handleResetGallery = async () => {
     if (!firebaseConfigValid || !db) {
-      alert("The reset action requires Firebase configuration. The built-in gallery remains available in offline mode.");
+      alert("The reset action requires Firebase configuration. No local gallery fallback is available right now.");
       return;
     }
 
@@ -280,7 +290,7 @@ export default function App() {
   // Manual trigger to ingest remaining unique artworks from Cleveland Museum of Art and Met Museum API
   const handleIngestCMAArtworks = async () => {
     if (!firebaseConfigValid) {
-      alert("Gallery expansion requires Firebase configuration. The built-in collection is currently being shown.");
+      alert("Gallery expansion requires Firebase configuration. No local fallback collection is available right now.");
       return;
     }
 
