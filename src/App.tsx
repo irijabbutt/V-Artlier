@@ -9,13 +9,12 @@ import AudioPlayerController from "./components/AudioPlayerController";
 import ShareModal from "./components/ShareModal";
 import ArtworkShowcaseBig from "./components/ArtworkShowcaseBig";
 import { Artwork, PlaybackLanguage } from "./types";
-import { DEFAULT_ARTWORKS } from "./data";
+import { searchMuseums, fetchOpeningCollection } from "./museumApi";
 import { db, collection, setDoc, doc, onSnapshot, deleteDoc, getDocs, handleFirestoreError, OperationType, firebaseConfigValid } from "./firebase";
 
 export default function App() {
   const [hasEntered, setHasEntered] = useState(false);
-  // Start with the curated defaults so the splash is never blank while live data loads
-  const [artworks, setArtworks] = useState<Artwork[]>(DEFAULT_ARTWORKS);
+  const [artworks, setArtworks] = useState<Artwork[]>([]);
   // Museum API (Met + Cleveland + GAC) search results merged into the gallery
   const [remoteResults, setRemoteResults] = useState<Artwork[]>([]);
   const [newArrivalId, setNewArrivalId] = useState<string | null>(null);
@@ -102,26 +101,12 @@ export default function App() {
     let isActive = true;
 
     if (!firebaseConfigValid || !db) {
-      const loadFallbackArtworks = async () => {
-        try {
-          const query = searchQuery.trim() || "global";
-          const response = await fetch(`/api/search-artworks?q=${encodeURIComponent(query)}`);
-          if (!response.ok) throw new Error("Remote museum search unavailable");
-          const remoteArtworks = await response.json();
-          if (isActive && Array.isArray(remoteArtworks) && remoteArtworks.length > 0) {
-            setArtworks(remoteArtworks as Artwork[]);
-            return;
-          }
-        } catch (error) {
-          console.warn("Remote museum search unavailable, using built-in gallery", error);
-        }
-
-        if (isActive) {
-          setArtworks(DEFAULT_ARTWORKS);
-        }
-      };
-
-      loadFallbackArtworks();
+      // No Firestore: exhibition comes straight from the museum APIs
+      fetchOpeningCollection()
+        .then((remoteArtworks) => {
+          if (isActive) setArtworks(remoteArtworks);
+        })
+        .catch((error) => console.warn("Museum API opening collection failed", error));
       return () => {
         isActive = false;
       };
@@ -132,8 +117,12 @@ export default function App() {
       if (!isActive) return;
 
       if (snapshot.empty) {
-        console.log("Firestore empty; showing built-in default artworks locally (nothing is seeded).");
-        setArtworks(DEFAULT_ARTWORKS);
+        console.log("Firestore empty; loading the opening collection from the museum APIs (nothing is seeded).");
+        fetchOpeningCollection()
+          .then((remoteArtworks) => {
+            if (isActive) setArtworks(remoteArtworks);
+          })
+          .catch((error) => console.warn("Museum API opening collection failed", error));
       } else {
         const loaded: Artwork[] = [];
         snapshot.forEach((docSnap) => {
@@ -168,7 +157,7 @@ export default function App() {
       isActive = false;
       unsubscribe();
     };
-  }, [firebaseConfigValid, searchQuery]);
+  }, [firebaseConfigValid]);
 
   // Search the Met & Cleveland museum APIs (plus GAC registry) whenever the user types a query
   useEffect(() => {
@@ -180,11 +169,9 @@ export default function App() {
     let isActive = true;
     const timer = setTimeout(async () => {
       try {
-        const response = await fetch(`/api/search-artworks?q=${encodeURIComponent(query)}`);
-        if (!response.ok) return;
-        const data = await response.json();
-        if (isActive && Array.isArray(data)) {
-          setRemoteResults(data as Artwork[]);
+        const data = await searchMuseums(query);
+        if (isActive) {
+          setRemoteResults(data);
         }
       } catch (error) {
         console.warn("Museum API search failed", error);
