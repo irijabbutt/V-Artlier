@@ -51,10 +51,10 @@ export default function ArtworkShowcaseBig({
       <div className="absolute top-0 right-0 w-80 h-80 bg-[#d4af37]/5 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-80 h-80 bg-red-500/5 rounded-full blur-[100px] pointer-events-none" />
 
-      <div className="p-6 md:p-8 flex flex-col lg:flex-row gap-8 items-center lg:items-stretch">
-        
-        {/* Left: Giant Spotlit Artwork Frame */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-center items-center bg-[#181313] p-4 md:p-6 border border-[#2e2626]/50 rounded-xs relative group">
+      <div className="p-6 md:p-8 flex flex-col gap-8 items-center">
+
+        {/* Top: Giant Spotlit Artwork Frame (image always shown first, stacked above the placard) */}
+        <div className="w-full flex flex-col justify-center items-center bg-[#181313] p-4 md:p-6 border border-[#2e2626]/50 rounded-xs relative group">
           
           {/* Virtual spotlight beam overlay */}
           <div className="absolute top-0 inset-x-0 h-1/2 bg-gradient-to-b from-[#fffdf9]/[0.025] to-transparent pointer-events-none z-10" />
@@ -161,8 +161,8 @@ export default function ArtworkShowcaseBig({
           </div>
         </div>
 
-        {/* Right: Rich Exhibition Placard Info & Audioguide */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-between py-2">
+        {/* Below: Rich Exhibition Placard Info & Audioguide */}
+        <div className="w-full flex flex-col justify-between py-2">
           <div>
             {/* Header info */}
             <div className="flex flex-wrap items-center gap-3 font-mono text-[10px] uppercase tracking-wider text-[#d4af37]">
