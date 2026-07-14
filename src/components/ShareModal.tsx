@@ -178,7 +178,7 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
 
       ctx.fillStyle = "#d4af37";
       ctx.font = "bold 20px 'JetBrains Mono', monospace";
-      ctx.fillText("EXHIBITION ENTRY TICKET", 540, 410);
+      ctx.fillText("EXHIBITION PASS", 540, 410);
 
       // Draw subtle horizontal dividing lines
       ctx.strokeStyle = "rgba(255, 253, 249, 0.15)";
@@ -254,7 +254,7 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
       // Add a clean border seal
       ctx.fillStyle = "#d4af37";
       ctx.font = "bold 26px 'Cormorant Garamond', serif";
-      ctx.fillText("★ V'ARTLIER MASTERWORK COLLECTION ★", 540, 1675);
+      ctx.fillText("THE GREAT HALL", 540, 1675);
 
       // 8. Output as file download
       downloadCanvas(canvas, `vartlier_story_sticker_${artwork.id}.png`);
@@ -329,7 +329,7 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
                 </p>
                 <div className="h-[1px] border-t border-white/10 border-dashed my-1.5" />
                 <span className="font-mono text-[5px] text-[#d4af37] tracking-[0.15em]">
-                  EXHIBITION PASS
+                  THE GREAT HALL
                 </span>
               </div>
             </div>
