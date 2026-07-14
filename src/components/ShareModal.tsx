@@ -224,7 +224,7 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
 
       ctx.fillStyle = "rgba(255, 253, 249, 0.4)";
       ctx.font = "normal 20px 'JetBrains Mono', monospace";
-      ctx.fillText("SCAN TICKET OR USE LINK TO ACCESS PORTAL", 540, 1535);
+      ctx.fillText("VIRTUAL GALLERY EXHIBITION PASS", 540, 1535);
 
       // Render simulated barcode / code lines at bottom
       ctx.fillStyle = "rgba(255, 253, 249, 0.35)";
@@ -313,7 +313,7 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
                 </p>
                 <div className="h-[1px] border-t border-white/10 border-dashed my-1.5" />
                 <span className="font-mono text-[5px] text-[#d4af37] tracking-[0.15em]">
-                  SCAN FOR AUDIOGUIDE
+                  EXHIBITION PASS
                 </span>
               </div>
             </div>
