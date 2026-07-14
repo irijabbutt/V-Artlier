@@ -81,13 +81,18 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
     const words = text.split(/\s+/).filter(Boolean);
     const lines: string[] = [];
     let line = "";
+    let consumedAllWords = true;
 
-    for (const word of words) {
+    for (let index = 0; index < words.length; index++) {
+      const word = words[index];
       const testLine = line ? `${line} ${word}` : word;
       if (ctx.measureText(testLine).width > maxWidth && line) {
         lines.push(line);
         line = word;
-        if (lines.length === maxLines) break;
+        if (lines.length === maxLines) {
+          consumedAllWords = false;
+          break;
+        }
       } else {
         line = testLine;
       }
@@ -97,9 +102,19 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
       lines.push(line);
     }
 
+    if (!consumedAllWords && lines.length > 0) {
+      let finalLine = lines[lines.length - 1];
+      while (finalLine.length > 0 && ctx.measureText(`${finalLine}...`).width > maxWidth) {
+        finalLine = finalLine.slice(0, -1).trim();
+      }
+      lines[lines.length - 1] = `${finalLine}...`;
+    }
+
     lines.forEach((lineText, index) => {
       ctx.fillText(lineText, x, y + index * lineHeight);
     });
+
+    return lines.length;
   };
 
   const downloadCanvas = (canvas: HTMLCanvasElement, filename: string) => {
@@ -202,16 +217,17 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
 
       // 6. Placard details
       ctx.fillStyle = "#fffdf9";
-      ctx.font = "italic normal 600 52px 'Cormorant Garamond', Georgia, serif";
-      ctx.fillText(`"${toSafeString(artwork.title)}"`, 540, 1280);
+      ctx.font = "italic normal 600 44px 'Cormorant Garamond', Georgia, serif";
+      const titleLines = drawWrappedText(ctx, `"${toSafeString(artwork.title)}"`, 540, 1260, 760, 54, 2);
+      const artistY = 1260 + titleLines * 54 + 34;
 
       ctx.fillStyle = "rgba(255, 253, 249, 0.75)";
       ctx.font = "normal 32px 'Plus Jakarta Sans', sans-serif";
-      ctx.fillText(`${toSafeString(artwork.artist_name)} (b. ${toSafeString(artwork.year_created)})`, 540, 1340);
+      ctx.fillText(`${toSafeString(artwork.artist_name)} (b. ${toSafeString(artwork.year_created)})`, 540, artistY);
 
       ctx.fillStyle = "#d4af37";
       ctx.font = "normal 24px 'JetBrains Mono', monospace";
-      ctx.fillText(`${toSafeString(artwork.medium)} | ${toSafeString(artwork.origin_country)}`, 540, 1400);
+      ctx.fillText(`${toSafeString(artwork.medium)} | ${toSafeString(artwork.origin_country)}`, 540, artistY + 60);
 
       // 7. Mini Ticket Tear-off & QR code simulation
       ctx.strokeStyle = "rgba(255, 253, 249, 0.2)";
