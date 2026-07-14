@@ -43,23 +43,95 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
     window.open(`https://api.whatsapp.com/send?text=${text}`, "_blank");
   };
 
+  const getCanvasSafeImageUrl = (url: string) => {
+    if (!url) return "";
+    return `https://images.weserv.nl/?url=${encodeURIComponent(url.replace(/^https?:\/\//i, ""))}`;
+  };
+
+  const loadStoryImage = (url: string): Promise<HTMLImageElement | null> => {
+    const candidates = [getCanvasSafeImageUrl(url)].filter(Boolean);
+
+    return new Promise((resolve) => {
+      const tryLoad = (index: number) => {
+        if (index >= candidates.length) {
+          resolve(null);
+          return;
+        }
+
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.onerror = () => tryLoad(index + 1);
+        img.src = candidates[index];
+      };
+
+      tryLoad(0);
+    });
+  };
+
+  const drawWrappedText = (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    x: number,
+    y: number,
+    maxWidth: number,
+    lineHeight: number,
+    maxLines: number
+  ) => {
+    const words = text.split(/\s+/).filter(Boolean);
+    const lines: string[] = [];
+    let line = "";
+
+    for (const word of words) {
+      const testLine = line ? `${line} ${word}` : word;
+      if (ctx.measureText(testLine).width > maxWidth && line) {
+        lines.push(line);
+        line = word;
+        if (lines.length === maxLines) break;
+      } else {
+        line = testLine;
+      }
+    }
+
+    if (line && lines.length < maxLines) {
+      lines.push(line);
+    }
+
+    lines.forEach((lineText, index) => {
+      ctx.fillText(lineText, x, y + index * lineHeight);
+    });
+  };
+
+  const downloadCanvas = (canvas: HTMLCanvasElement, filename: string) => {
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const downloadLink = document.createElement("a");
+      downloadLink.download = filename;
+      downloadLink.href = url;
+      downloadLink.click();
+      URL.revokeObjectURL(url);
+    }, "image/png");
+  };
+
   // Generate and Download custom Story Sticker Card using Canvas
-  const handleDownloadStorySticker = () => {
+  const handleDownloadStorySticker = async () => {
     if (!canvasRef.current) return;
     setGeneratingSticker(true);
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) {
+      setGeneratingSticker(false);
+      return;
+    }
 
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = artwork.image_url;
+    // Setup High-DPI canvas layout (standard 9:16 Instagram/FB Story size: 1080 x 1920)
+    canvas.width = 1080;
+    canvas.height = 1920;
 
-    img.onload = () => {
-      // Setup High-DPI canvas layout (standard 9:16 Instagram/FB Story size: 1080 x 1920)
-      canvas.width = 1080;
-      canvas.height = 1920;
+    try {
+      const img = await loadStoryImage(artwork.image_url);
 
       // 1. Solid Truffle Background
       ctx.fillStyle = "#161212";
@@ -105,13 +177,24 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
       // Draw shadow background for art
       ctx.fillStyle = "#120e0e";
       ctx.fillRect(200, 520, 680, 680);
-      
-      // Calculate aspect ratio fit
-      const scale = Math.min(640 / img.width, 640 / img.height);
-      const x = 540 - (img.width * scale) / 2;
-      const y = 860 - (img.height * scale) / 2;
-      
-      ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+
+      if (img) {
+        // Calculate aspect ratio fit
+        const scale = Math.min(640 / img.width, 640 / img.height);
+        const x = 540 - (img.width * scale) / 2;
+        const y = 860 - (img.height * scale) / 2;
+        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+      } else {
+        ctx.strokeStyle = "rgba(212, 175, 55, 0.45)";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(250, 600, 580, 500);
+        ctx.fillStyle = "rgba(255, 253, 249, 0.82)";
+        ctx.font = "italic normal 600 54px Georgia, serif";
+        drawWrappedText(ctx, toSafeString(artwork.title), 540, 790, 500, 62, 4);
+        ctx.fillStyle = "rgba(212, 175, 55, 0.85)";
+        ctx.font = "bold 22px monospace";
+        ctx.fillText("ARTWORK IMAGE UNAVAILABLE", 540, 1030);
+      }
       
       // Outer border of artwork frame
       ctx.strokeStyle = "rgba(255, 253, 249, 0.3)";
@@ -158,31 +241,12 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
       ctx.fillText("★ V'ARTLIER MASTERWORK COLLECTION ★", 540, 1675);
 
       // 8. Output as file download
-      const dataUrl = canvas.toDataURL("image/png");
-      const downloadLink = document.createElement("a");
-      downloadLink.download = `vartlier_story_sticker_${artwork.id}.png`;
-      downloadLink.href = dataUrl;
-      downloadLink.click();
+      downloadCanvas(canvas, `vartlier_story_sticker_${artwork.id}.png`);
       setGeneratingSticker(false);
-    };
-
-    img.onerror = () => {
-      // Fallback if image fails to load due to CORS: paint elegant vector art placeholder
-      ctx.fillStyle = "#161212";
-      ctx.fillRect(0, 0, 1080, 1920);
-      ctx.fillStyle = "#fffdf9";
-      ctx.font = "60px 'Cormorant Garamond'";
-      ctx.fillText("V'Artlier Masterwork Gallery", 540, 300);
-      ctx.fillText(toSafeString(artwork.title), 540, 600);
-      ctx.fillText(toSafeString(artwork.artist_name), 540, 700);
-
-      const dataUrl = canvas.toDataURL("image/png");
-      const downloadLink = document.createElement("a");
-      downloadLink.download = `vartlier_story_sticker_${artwork.id}.png`;
-      downloadLink.href = dataUrl;
-      downloadLink.click();
+    } catch (err) {
+      console.error("Failed to generate story sticker", err);
       setGeneratingSticker(false);
-    };
+    }
   };
 
   return (
