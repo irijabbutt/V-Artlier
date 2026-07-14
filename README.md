@@ -1,6 +1,8 @@
 # V'Artlier
 
 V'Artlier is a DYLP hackathon vibe-coding project built as a virtual gallery experience for discovering global artworks through an immersive, exhibition-style interface. Visitors can browse curated pieces, filter the collection, view spotlight details, and listen to bilingual audio guides powered by Gemini.
+***Deployed Link***
+https://irijabbutt.github.io/V-Artlier/
 
 ## Team
 
