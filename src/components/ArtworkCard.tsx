@@ -225,7 +225,7 @@ export default function ArtworkCard({
           <p className="font-sans text-[10.5px] leading-relaxed text-amber-50/50 mt-2.5 line-clamp-2 italic">
             &ldquo;{toSafeString(artwork.text_description)}&rdquo;
           </p>
-          <p className="font-serif text-xs leading-relaxed text-amber-50/45 mt-1.5 text-right urdu-text line-clamp-1 opacity-70">
+          <p className="font-serif text-xs leading-relaxed text-amber-50/55 mt-2 text-right urdu-text opacity-80">
             {toSafeString(artwork.text_description_urdu)}
           </p>
         </div>

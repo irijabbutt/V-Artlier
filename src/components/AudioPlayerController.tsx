@@ -105,8 +105,7 @@ export default function AudioPlayerController({
     });
   };
 
-  const stopAllAudio = () => {
-    playbackIdRef.current++; // Increment to invalidate previous async fetches
+  const cleanupAudioStreams = () => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
@@ -116,9 +115,15 @@ export default function AudioPlayerController({
     }
     if (bgAudioRef.current) {
       bgAudioRef.current.pause();
+      bgAudioRef.current.currentTime = 0;
     }
     if (googleTTSAudioRef.current) {
       googleTTSAudioRef.current.pause();
+      googleTTSAudioRef.current.onended = null;
+      googleTTSAudioRef.current.onerror = null;
+      googleTTSAudioRef.current.removeAttribute("src");
+      googleTTSAudioRef.current.load();
+      googleTTSAudioRef.current = null;
     }
     if (geminiAudioSourceRef.current) {
       try {
@@ -126,6 +131,15 @@ export default function AudioPlayerController({
       } catch (e) {}
       geminiAudioSourceRef.current = null;
     }
+    if (audioContextRef.current) {
+      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current = null;
+    }
+  };
+
+  const stopAllAudio = () => {
+    playbackIdRef.current++; // Increment to invalidate previous async fetches
+    cleanupAudioStreams();
   };
 
   useEffect(() => {
@@ -210,15 +224,7 @@ export default function AudioPlayerController({
       if (typeof window === "undefined" || !artwork) return;
       
       const currentId = ++playbackIdRef.current;
-      
-      // Stop previous
-      if (window.speechSynthesis) {
-        window.speechSynthesis.cancel();
-      }
-      if (geminiAudioSourceRef.current) {
-        try { geminiAudioSourceRef.current.stop(); } catch(e) {}
-        geminiAudioSourceRef.current = null;
-      }
+      cleanupAudioStreams();
 
       const desc = toSafeString(artwork.text_description);
       const descUrdu = toSafeString(artwork.text_description_urdu);
@@ -422,15 +428,7 @@ export default function AudioPlayerController({
 
   const pausePlayback = () => {
     playbackIdRef.current++;
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-    if (googleTTSAudioRef.current) googleTTSAudioRef.current.pause();
-    if (bgAudioRef.current) bgAudioRef.current.pause();
-    if (geminiAudioSourceRef.current) {
-      try { geminiAudioSourceRef.current.stop(); } catch (e) {}
-      geminiAudioSourceRef.current = null;
-    }
+    cleanupAudioStreams();
   };
 
   // Drag/click progress bar to scrub narration location
@@ -441,16 +439,8 @@ export default function AudioPlayerController({
     const percentage = (x / width) * 100;
     setProgress(percentage);
     
-    // Stop all audio when seeking to prevent dual voices
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
-    }
-    if (geminiAudioSourceRef.current) {
-      try {
-        geminiAudioSourceRef.current.stop();
-      } catch (e) {}
-      geminiAudioSourceRef.current = null;
-    }
+    // Stop all active streams when seeking to prevent dual voices
+    stopAllAudio();
 
     // Note: Playback will resume via the triggerPlayback call if isPlaying is true
   };
@@ -472,6 +462,14 @@ export default function AudioPlayerController({
             : toSafeString(artwork.text_description)
           }
         </div>
+        <button
+          onClick={onClose}
+          className="md:hidden h-8 w-8 -mt-1 -mr-2 flex items-center justify-center bg-black/20 hover:bg-black/60 border border-[#2e2626] hover:border-[#d4af37]/30 text-amber-100/55 hover:text-[#fffdf9] rounded-sm transition-all cursor-pointer shrink-0"
+          title="Turn Off Audioguide"
+          aria-label="Turn Off Audioguide"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-4 justify-between">
