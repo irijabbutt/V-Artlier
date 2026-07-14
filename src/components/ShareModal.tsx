@@ -45,6 +45,9 @@ export default function ShareModal({ artwork, onClose }: ShareModalProps) {
 
   const getCanvasSafeImageUrl = (url: string) => {
     if (!url) return "";
+    if (url.startsWith("/") || url.startsWith("data:") || url.startsWith(window.location.origin)) {
+      return url;
+    }
     return `https://images.weserv.nl/?url=${encodeURIComponent(url.replace(/^https?:\/\//i, ""))}`;
   };
 
