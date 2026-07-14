@@ -167,7 +167,39 @@ async function wikiSummary(searchTerm: string): Promise<string | null> {
 
 // Description comes only from an article about the artwork itself — never the
 // artist's biography. The artist's article feeds artist_bio separately.
-export async function fetchWebInfo(art: Artwork): Promise<{ description: string | null; artistBio: string | null }> {
+async function translateEnglishToUrdu(text: string): Promise<string | null> {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (!clean) return null;
+
+  const chunks: string[] = [];
+  let buffer = "";
+  for (const sentence of clean.split(/(?<=[.!?])\s+/)) {
+    if (buffer && buffer.length + sentence.length + 1 > 450) {
+      chunks.push(buffer);
+      buffer = sentence;
+    } else {
+      buffer = buffer ? `${buffer} ${sentence}` : sentence;
+    }
+  }
+  if (buffer) chunks.push(buffer);
+
+  const translated = await Promise.all(
+    chunks.map(async (chunk) => {
+      const res = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(chunk)}&langpair=en%7Cur`
+      );
+      if (!res.ok) return null;
+      const data = await res.json();
+      const translatedText = data?.responseData?.translatedText;
+      return typeof translatedText === "string" ? translatedText.trim() : null;
+    })
+  );
+
+  const joined = translated.filter(Boolean).join(" ");
+  return joined.length > 0 ? joined : null;
+}
+
+export async function fetchWebInfo(art: Artwork): Promise<{ description: string | null; descriptionUrdu: string | null; artistBio: string | null }> {
   const hasArtist = !!art.artist_name && !/unknown/i.test(art.artist_name);
   const [rawDescription, artistBio] = await Promise.all([
     wikiSummary(art.title).catch(() => null),
@@ -187,7 +219,8 @@ export async function fetchWebInfo(art: Artwork): Promise<{ description: string 
     rawDescription && !looksLikeBiography(rawDescription) && !mentionsArtistMoreThanArtwork(rawDescription)
       ? rawDescription
       : null;
-  return { description, artistBio };
+  const descriptionUrdu = description ? await translateEnglishToUrdu(description).catch(() => null) : null;
+  return { description, descriptionUrdu, artistBio };
 }
 
 // Opening exhibition: a few culture themes fetched live so the gallery and

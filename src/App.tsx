@@ -205,12 +205,13 @@ export default function App() {
     if (!art.id.startsWith("met_") && !art.id.startsWith("cma_")) return;
     webEnrichedIds.current.add(art.id);
 
-    fetchWebInfo(art).then(({ description, artistBio }) => {
-      if (!description && !artistBio) return;
+    fetchWebInfo(art).then(({ description, descriptionUrdu, artistBio }) => {
+      if (!description && !descriptionUrdu && !artistBio) return;
       const enrich = (a: Artwork) => a.id === art.id
         ? {
             ...a,
             ...(description ? { text_description: description } : {}),
+            ...(descriptionUrdu ? { text_description_urdu: descriptionUrdu } : {}),
             ...(artistBio ? { artist_bio: artistBio } : {}),
           }
         : a;
